@@ -40,7 +40,7 @@ function fillTask(task) {
         title.val('Без темы');
 
     var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-    if (resolution.val().length === 0 || resolution.val().indexOf('Авторегистрация') !== -1)
+    if (resolution.val().length === 0 || resolution.val().indexOf('АвтоРегистрация') !== -1)
         resolution.val(task[7]);
 
     form.find('input[name="instance/resolution.code"]').val(task[8]);

@@ -77,9 +77,6 @@ function checkNewTask() {
     return wait();
 }
 
-function isTasksList() {
-    return (getRecordListByHPSM().length !== 0);
-}
 
 function registration() {
     //console.log('registration');
@@ -88,21 +85,20 @@ function registration() {
 
     clearInterval(intValId);
     chrome.extension.sendMessage({command: "waitNewTask"});
-    if (getStatus() !== 'Новое' || w.find('button:contains("Передать Инженеру")').length === 0) {
+    if (getStatus() !== 'Новое'
+        || (w.find('button:contains("Передать Инженеру")').length === 0
+        && w.find('button:contains("В работу")').length === 0)
+    ) {
         return w.find('button:contains("ОК")').click();
     }
     var form = getActiveFormByHPSM();
     var resolution = form.find('textarea[name="instance/resolution/resolution"]');
     if (resolution.length !== 0)
         resolution.val('АвтоРегистрация: ' + (new Date).toLocaleString());
-    return w.find('button:contains("Передать Инженеру")').click();
-}
-
-function getAutoRegStatus(callback) {
-    chrome.storage.local.get('registration', function (result) {
-        var registration = result.registration;
-        callback(registration);
-    });
+    
+    return (w.find('button:contains("Передать Инженеру")').length !== 0)
+        ? w.find('button:contains("Передать Инженеру")').click()
+        : w.find('button:contains("В работу")').click();
 }
 
 function getCommandFromBackground() {

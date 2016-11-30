@@ -52,6 +52,10 @@ function getRecordListByHPSM() {
     return (frame) ? frame.find('#recordList') : false;
 }
 
+function isTasksList() {
+    return (getRecordListByHPSM().length !== 0);
+}
+
 /**
  * Возвращает статус обращения/инцидента
  * @returns string|null Task status
@@ -99,4 +103,11 @@ function clean() {
     chrome.storage.local.remove('registration');
     chrome.storage.local.remove('todo');
     chrome.storage.local.remove('hpsmTab');
+}
+
+function getAutoRegStatus(callback) {
+    chrome.storage.local.get('registration', function (result) {
+        var registration = result.registration;
+        callback(registration);
+    });
 }
