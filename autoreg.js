@@ -15,6 +15,10 @@ function checkStatusProgram() {
                 deleteTopLayer();
             }
         });
+        // if (isNewTask()) {
+        //     clearInterval(intValId);
+        //     checkNewTask();
+        // }
     }, 1000);
 }
 
@@ -95,7 +99,7 @@ function registration() {
     var resolution = form.find('textarea[name="instance/resolution/resolution"]');
     if (resolution.length !== 0)
         resolution.val('АвтоРегистрация: ' + (new Date).toLocaleString());
-    
+
     return (w.find('button:contains("Передать Инженеру")').length !== 0)
         ? w.find('button:contains("Передать Инженеру")').click()
         : w.find('button:contains("В работу")').click();
