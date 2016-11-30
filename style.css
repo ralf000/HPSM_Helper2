@@ -123,6 +123,7 @@
     box-shadow: 0px 4px 0px 0px #717171;
     border-radius: 5px;
     margin-bottom: 5px;
+    margin-left: 3px;
 }
 
 .onoffswitch-checkbox {
@@ -204,7 +205,7 @@ label.onoffswitch-label {
 }
 
 .title {
-    font-size: 14px;
+    font-size: 13px;
     margin-bottom: 5px;
 }
 
