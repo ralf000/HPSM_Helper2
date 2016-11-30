@@ -1,0 +1,40 @@
+{
+  "name": "HPSM Helper",
+  "description": "Упрощает работу в системой HPSM",
+  "version": "4.0",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sm.mos.ru/*/*"
+      ],
+      "js": [
+        "data.json",
+        "sweet-alert.js",
+        "lib.js",
+        "jquery.min.js"
+      ],
+      "css": [
+        "sweet-alert.css"
+      ],
+      "all_frames": true
+    }
+  ],
+  "permissions": [
+    "storage",
+    "https://sm.mos.ru/*/*"
+  ],
+  "browser_action": {
+    "default_title": "HPSM Helper",
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "manifest_version": 2,
+  "background": {
+    "scripts": [
+      "background.js",
+      "jquery.min.js",
+      "data.json",
+      "lib.js"
+    ]
+  }
+}
