@@ -44,16 +44,18 @@ function getActiveFrameByHPSM() {
  */
 function getActiveFormByHPSM() {
     var frame = getActiveFrameByHPSM();
-    return (frame) ? frame.find('form#topaz') : false;
+    return (frame.find('form#topaz').length > 0)
+        ? frame.find('form#topaz')
+        : frame.contents().find('iframe.ux-mif').contents().find('form#topaz');
 }
 
 function getRecordListByHPSM() {
     var frame = getActiveFrameByHPSM();
-    return (frame) ? frame.find('#recordList') : false;
+    return (frame.find('#recordList').length !== 0) ? frame.find('#recordList') : false;
 }
 
 function isTasksList() {
-    return (getRecordListByHPSM().length !== 0);
+    return getRecordListByHPSM();
 }
 
 /**
