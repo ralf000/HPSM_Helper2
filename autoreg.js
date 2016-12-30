@@ -30,14 +30,14 @@ function addTopLayerOnPage() {
     deleteTopLayer();
 
     $('body').append(getTopLayer());
-    $('#toplayer').fadeIn();
+    $('#toplayer').show();
 }
 
 function update() {
     if (new Date() - start < waitTime) {
         setTimeout(function () {
-            update();
-        }, waitTime / 20);
+            return update();
+        }, waitTime / 10);
     }
 
     //console.log('sendMessage: waitNewTask');
