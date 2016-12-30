@@ -15,10 +15,6 @@ function checkStatusProgram() {
                 deleteTopLayer();
             }
         });
-        // if (isNewTask()) {
-        //     clearInterval(intValId);
-        //     checkNewTask();
-        // }
     }, 1000);
 }
 
@@ -34,14 +30,14 @@ function addTopLayerOnPage() {
     deleteTopLayer();
 
     $('body').append(getTopLayer());
-    $('#toplayer').fadeIn();
+    $('#toplayer').show();
 }
 
 function update() {
     if (new Date() - start < waitTime) {
         setTimeout(function () {
-            update();
-        }, waitTime / 20);
+            return update();
+        }, waitTime / 10);
     }
 
     //console.log('sendMessage: waitNewTask');
@@ -56,7 +52,8 @@ function wait() {
     //console.log('wait');
 
     addTopLayerOnPage();
-    setTimeout(function () {
+    var t = setTimeout(function () {
+        clearTimeout(t);
         update();
     }, waitTime);
 }
@@ -89,20 +86,25 @@ function registration() {
 
     clearInterval(intValId);
     chrome.extension.sendMessage({command: "waitNewTask"});
-    if (getStatus() !== 'Новое'
-        || (w.find('button:contains("Передать Инженеру")').length === 0
-        && w.find('button:contains("В работу")').length === 0)
-    ) {
-        return w.find('button:contains("ОК")').click();
-    }
-    var form = getActiveFormByHPSM();
-    var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-    if (resolution.length !== 0)
-        resolution.val('АвтоРегистрация: ' + (new Date).toLocaleString());
 
-    return (w.find('button:contains("Передать Инженеру")').length !== 0)
-        ? w.find('button:contains("Передать Инженеру")').click()
-        : w.find('button:contains("В работу")').click();
+    w.find('button:contains("Обновить")').click();
+
+    setTimeout(function () {
+        if (getStatus() !== 'Новое'
+            || (w.find('button:contains("Передать Инженеру")').length === 0
+            && w.find('button:contains("В работу")').length === 0)
+        ) {
+            return w.find('button:contains("ОК")').click();
+        }
+        var form = getActiveFormByHPSM();
+        var resolution = form.find('textarea[name="instance/resolution/resolution"]');
+        if (resolution.length !== 0)
+            resolution.val('АвтоРегистрация: ' + (new Date).toLocaleString());
+
+        return (w.find('button:contains("Передать Инженеру")').length !== 0)
+            ? w.find('button:contains("Передать Инженеру")').click()
+            : w.find('button:contains("В работу")').click();
+    }, 5000);
 }
 
 function getCommandFromBackground() {
