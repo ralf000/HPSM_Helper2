@@ -94,7 +94,7 @@ function getTopLayer() {
                     left: 45%;">\
                     Авторегистрация\
                     <div id="working" style="width: 100px;font-size: 12px;margin-top: 10px;">\
-                        <img src="http://investmoscow.ru/media/3064469/progressbar.gif" alt="" \
+                        <img src="https://investmoscow.ru/media/3064469/progressbar.gif" alt="" \
                             style="left: 20px;top: 10px;position: relative;">\
                     </div>\
                 </span>\
