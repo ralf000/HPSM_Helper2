@@ -30,14 +30,14 @@ function addTopLayerOnPage() {
     deleteTopLayer();
 
     $('body').append(getTopLayer());
-    $('#toplayer').show();
+    $('#toplayer').fadeIn();
 }
 
 function update() {
     if (new Date() - start < waitTime) {
         setTimeout(function () {
-            return update();
-        }, waitTime / 10);
+            update();
+        }, waitTime / 20);
     }
 
     //console.log('sendMessage: waitNewTask');
@@ -52,8 +52,7 @@ function wait() {
     //console.log('wait');
 
     addTopLayerOnPage();
-    var t = setTimeout(function () {
-        clearTimeout(t);
+    setTimeout(function () {
         update();
     }, waitTime);
 }
@@ -104,7 +103,7 @@ function registration() {
         return (w.find('button:contains("Передать Инженеру")').length !== 0)
             ? w.find('button:contains("Передать Инженеру")').click()
             : w.find('button:contains("В работу")').click();
-    }, 3000);
+    }, 5000);
 }
 
 function getCommandFromBackground() {
