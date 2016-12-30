@@ -52,7 +52,8 @@ function wait() {
     //console.log('wait');
 
     addTopLayerOnPage();
-    setTimeout(function () {
+    var t = setTimeout(function () {
+        clearTimeout(t);
         update();
     }, waitTime);
 }
