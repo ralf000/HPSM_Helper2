@@ -59,7 +59,7 @@ function wait() {
 }
 
 function isNewTask() {
-    return (taskList.find('a:contains("Новое")').length !== 0);
+    return (taskList.find('[role=gridcell]:contains("Новое")').length !== 0);
 }
 
 function checkNewTask() {
@@ -69,11 +69,13 @@ function checkNewTask() {
         return;
     }
 
+    $('button[aria-label="Обновить"]').click();
+
     if (isNewTask()) {
         //console.log('sendMessage: newTask');
 
         chrome.extension.sendMessage({command: "newTask"});
-        return taskList.find('a:contains("Новое")')[0].click();
+        return taskList.find('.x-grid3-scroller a')[0].click();
     }
     return wait();
 }
