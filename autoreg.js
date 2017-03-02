@@ -2,8 +2,10 @@
 var w = getActiveWindowByHPSM();
 var taskList = getRecordListByHPSM();
 var waitTime = 1000 * 60 * 10;
+var delay = 1000;
 var start = new Date();
 var intValId;
+
 /**
  * отслеживает состояние программы
  */
@@ -15,7 +17,7 @@ function checkStatusProgram() {
                 deleteTopLayer();
             }
         });
-    }, 1000);
+    }, delay);
 }
 
 function deleteTopLayer() {
@@ -40,7 +42,6 @@ function update() {
         }, waitTime / 10);
     }
 
-    //console.log('sendMessage: waitNewTask');
     clearInterval(intValId);
     chrome.extension.sendMessage({command: "waitNewTask"});
     w.find('button:contains("Обновить")')
@@ -49,7 +50,6 @@ function update() {
 }
 
 function wait() {
-    //console.log('wait');
 
     addTopLayerOnPage();
     var t = setTimeout(function () {
@@ -59,31 +59,30 @@ function wait() {
 }
 
 function isNewTask() {
-    return (taskList.find('[role=gridcell]:contains("Новое")').length !== 0);
+    return (taskList.find('[role=gridcell]:contains("Новое")').length !== 0)
+        || (taskList.find('a:contains("Новое")').length !== 0);
 }
 
 function checkNewTask() {
-    //console.log('checkNewTask');
     if (!isTasksList()) {
         registration();
         return;
     }
 
-    $('button[aria-label="Обновить"]').click();
-
+    // $('button[aria-label="Обновить"]').click();
     if (isNewTask()) {
-        //console.log('sendMessage: newTask');
-
         chrome.extension.sendMessage({command: "newTask"});
-        return taskList.find('.x-grid3-scroller a')[0].click();
+        if ((taskList.find('div:contains("Новое")') !== 0)){
+            if (taskList.find('div:contains("Новое")').closest('table.x-grid3-row-table').find('a') !== 0)
+                return taskList.find('div:contains("Новое")').closest('table.x-grid3-row-table').find('a')[0].click();
+        }
+        return taskList.find('a:contains("Новое")')[0].click();
     }
     return wait();
 }
 
 
 function registration() {
-    //console.log('registration');
-
     if (isTasksList()) return checkNewTask();
 
     clearInterval(intValId);
@@ -106,7 +105,7 @@ function registration() {
         return (w.find('button:contains("Передать Инженеру")').length !== 0)
             ? w.find('button:contains("Передать Инженеру")').click()
             : w.find('button:contains("В работу")').click();
-    }, 5000);
+    }, delay * 5);
 }
 
 function getCommandFromBackground() {
@@ -122,10 +121,8 @@ function getCommandFromBackground() {
 
 function onOffRegHandler(registration) {
     if (registration === 'on') {
-        //console.log('registration: on');
         getCommandFromBackground();
     } else {
-        //console.log('registration: off');
     }
 }
 
