@@ -1,10 +1,11 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
 var taskList = getRecordListByHPSM();
-var waitTime = 1000 * 60 * 10;
+var waitTime = 1000 * 1 * 5;
 var delay = 1000;
 var start = new Date();
 var intValId;
+var taskType = '';
 
 /**
  * отслеживает состояние программы
@@ -59,8 +60,14 @@ function wait() {
 }
 
 function isNewTask() {
-    return (taskList.find('[role=gridcell]:contains("Новое")').length !== 0)
-        || (taskList.find('a:contains("Новое")').length !== 0);
+    if (taskType === 'Обращение') {
+        //Обращение
+        return (taskList.find('[role=gridcell]:contains("Новое")').length !== 0)
+            || (taskList.find('a:contains("Новое")').length !== 0);
+    } else {
+        //Инцидент
+        return (taskList.find('[role=gridcell]:contains("Направлен в группу")').length !== 0)
+    }
 }
 
 function checkNewTask() {
@@ -70,13 +77,33 @@ function checkNewTask() {
     }
 
     // $('button[aria-label="Обновить"]').click();
+
     if (isNewTask()) {
         chrome.extension.sendMessage({command: "newTask"});
-        if ((taskList.find('div:contains("Новое")') !== 0)){
-            if (taskList.find('div:contains("Новое")').closest('table.x-grid3-row-table').find('a') !== 0)
-                return taskList.find('div:contains("Новое")').closest('table.x-grid3-row-table').find('a')[0].click();
+        if (taskType === 'Обращение') {
+            if ((taskList.find('div:contains("Новое")') !== 0)) {
+                if (taskList
+                        .find('div:contains("Новое")')
+                        .closest('table.x-grid3-row-table')
+                        .find('a') !== 0)
+                    return taskList
+                        .find('div:contains("Новое")')
+                        .closest('table.x-grid3-row-table')
+                        .find('a')[0]
+                        .click();
+            }
+            return taskList
+                .find('a:contains("Новое")')[0]
+                .click();
+        } else {
+            if (taskList.find('div:contains("Направлен в группу")') !== 0) {
+                return taskList
+                    .find('div:contains("Направлен в группу")')
+                    .closest('table.x-grid3-row-table')
+                    .find('a')[0]
+                    .click();
+            }
         }
-        return taskList.find('a:contains("Новое")')[0].click();
     }
     return wait();
 }
@@ -91,9 +118,8 @@ function registration() {
     w.find('button:contains("Обновить")').click();
 
     setTimeout(function () {
-        if (getStatus() !== 'Новое'
-            || (w.find('button:contains("Передать Инженеру")').length === 0
-            && w.find('button:contains("В работу")').length === 0)
+        if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
+            || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
         ) {
             return w.find('button:contains("ОК")').click();
         }
@@ -126,8 +152,18 @@ function onOffRegHandler(registration) {
     }
 }
 
-function run() {
+function checkTaskType() {
+    var frame = getActiveFrameByHPSM();
+    taskType = frame.find('#X1 span').text();
+}
+
+function init() {
     checkStatusProgram();
+    checkTaskType();
+}
+
+function run() {
+    init();
     getAutoRegStatus(onOffRegHandler);
 }
 
