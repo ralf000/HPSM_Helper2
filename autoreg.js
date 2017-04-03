@@ -41,13 +41,15 @@ function update() {
         setTimeout(function () {
             return update();
         }, waitTime / 10);
+    } else {
+        clearInterval(intValId);
+        chrome.extension.sendMessage({command: "waitNewTask"}, function () {
+            w.find('button:contains("Обновить")')
+                ? w.find('button:contains("Обновить")').click()
+                : w.find('button:contains("ОК")').click();
+        });
     }
 
-    clearInterval(intValId);
-    chrome.extension.sendMessage({command: "waitNewTask"});
-    w.find('button:contains("Обновить")')
-        ? w.find('button:contains("Обновить")').click()
-        : w.find('button:contains("ОК")').click();
 }
 
 function wait() {
@@ -79,31 +81,33 @@ function checkNewTask() {
     // $('button[aria-label="Обновить"]').click();
 
     if (isNewTask()) {
-        chrome.extension.sendMessage({command: "newTask"});
-        if (taskType === 'Обращение') {
-            if ((taskList.find('div:contains("Новое")') !== 0)) {
-                if (taskList
-                        .find('div:contains("Новое")')
-                        .closest('table.x-grid3-row-table')
-                        .find('a') !== 0)
+        chrome.extension.sendMessage({command: "newTask"}, function () {
+            if (taskType === 'Обращение') {
+                if ((taskList.find('div:contains("Новое")') !== 0)) {
+                    if (taskList
+                            .find('div:contains("Новое")')
+                            .closest('table.x-grid3-row-table')
+                            .find('a') !== 0)
+                        return taskList
+                            .find('div:contains("Новое")')
+                            .closest('table.x-grid3-row-table')
+                            .find('a')[0]
+                            .click();
+                }
+                return taskList
+                    .find('a:contains("Новое")')[0]
+                    .click();
+            } else {
+                if (taskList.find('div:contains("Направлен в группу")') !== 0) {
                     return taskList
-                        .find('div:contains("Новое")')
+                        .find('div:contains("Направлен в группу")')
                         .closest('table.x-grid3-row-table')
                         .find('a')[0]
                         .click();
+                }
             }
-            return taskList
-                .find('a:contains("Новое")')[0]
-                .click();
-        } else {
-            if (taskList.find('div:contains("Направлен в группу")') !== 0) {
-                return taskList
-                    .find('div:contains("Направлен в группу")')
-                    .closest('table.x-grid3-row-table')
-                    .find('a')[0]
-                    .click();
-            }
-        }
+        });
+
     }
     return wait();
 }
@@ -113,25 +117,27 @@ function registration() {
     if (isTasksList()) return checkNewTask();
 
     clearInterval(intValId);
-    chrome.extension.sendMessage({command: "waitNewTask"});
+    chrome.extension.sendMessage({command: "waitNewTask"}, function () {
 
-    w.find('button:contains("Обновить")').click();
+        //w.find('button:contains("Обновить")').click();
 
-    setTimeout(function () {
-        if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
-            || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
-        ) {
-            return w.find('button:contains("ОК")').click();
-        }
-        var form = getActiveFormByHPSM();
-        var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-        if (resolution.length !== 0)
-            resolution.val('АвтоРегистрация: ' + (new Date).toLocaleString());
+        setTimeout(function () {
+            if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
+                || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
+            ) {
+                return w.find('button:contains("ОК")').click();
+            }
+            var form = getActiveFormByHPSM();
+            var resolution = form.find('textarea[name="instance/resolution/resolution"]');
+            if (resolution.length !== 0)
+                resolution.val('АвтоРегистрация: ' + (new Date).toLocaleString());
 
-        return (w.find('button:contains("Передать Инженеру")').length !== 0)
-            ? w.find('button:contains("Передать Инженеру")').click()
-            : w.find('button:contains("В работу")').click();
-    }, delay * 5);
+            return (w.find('button:contains("Передать Инженеру")').length !== 0)
+                ? w.find('button:contains("Передать Инженеру")').click()
+                : w.find('button:contains("В работу")').click();
+        }, delay * 5);
+
+    });
 }
 
 function getCommandFromBackground() {
@@ -146,6 +152,7 @@ function getCommandFromBackground() {
 }
 
 function onOffRegHandler(registration) {
+    init();
     if (registration === 'on') {
         getCommandFromBackground();
     } else {
@@ -163,7 +170,6 @@ function init() {
 }
 
 function run() {
-    init();
     getAutoRegStatus(onOffRegHandler);
 }
 
