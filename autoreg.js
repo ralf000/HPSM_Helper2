@@ -7,6 +7,10 @@ var start = new Date();
 var intValId;
 var taskType = '';
 
+function now() {
+    return (new Date().toLocaleString());
+}
+
 /**
  * отслеживает состояние программы
  */
@@ -54,6 +58,8 @@ function update() {
 
 function wait() {
 
+    console.log(now() + ' Статус: ожидание. До следующей проверки новых обращений/инцидентов: ' + waitTime / 60 / 1000 + ' минут');
+
     addTopLayerOnPage();
     var t = setTimeout(function () {
         clearTimeout(t);
@@ -78,10 +84,18 @@ function checkNewTask() {
         return;
     }
 
+    console.log(now() + ' Проверяю наличие новых обращений/инцидентов');
+
     // $('button[aria-label="Обновить"]').click();
 
     if (isNewTask()) {
+
+        console.log(now() + ' Обнаружено новое обращение/инцидент');
+
         chrome.extension.sendMessage({command: "newTask"}, function () {
+
+            console.log(now() + ' Перехожу к регистрации');
+
             if (taskType === 'Обращение') {
                 if ((taskList.find('div:contains("Новое")') !== 0)) {
                     if (taskList
@@ -116,21 +130,32 @@ function checkNewTask() {
 function registration() {
     if (isTasksList()) return checkNewTask();
 
+    console.log(now() + ' Регистрация обращения/инцидента в процессе');
+
     clearInterval(intValId);
     chrome.extension.sendMessage({command: "waitNewTask"}, function () {
 
         //w.find('button:contains("Обновить")').click();
 
         setTimeout(function () {
+            console.log(now() + ' Статус обращения/инцидента: ' + getStatus());
+
             if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
                 || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
             ) {
+                console.log(now() + ' Выход из регистрации обращения');
                 return w.find('button:contains("ОК")').click();
             }
             var form = getActiveFormByHPSM();
+
+            //логи
+            if (form.find('[ref="instance/incident.id"] span').length !== 0)
+                console.log(now() + ' Регистрирую обращение/инцидент под номером ' + form.find('[ref="instance/incident.id"] span').text());
+            ///логи
+
             var resolution = form.find('textarea[name="instance/resolution/resolution"]');
             if (resolution.length !== 0)
-                resolution.val('АвтоРегистрация: ' + (new Date).toLocaleString());
+                resolution.val('АвтоРегистрация: ' + now());
 
             return (w.find('button:contains("Передать Инженеру")').length !== 0)
                 ? w.find('button:contains("Передать Инженеру")').click()
@@ -141,6 +166,7 @@ function registration() {
 }
 
 function getCommandFromBackground() {
+    console.log(now() + ' Получаю команду');
     chrome.storage.local.get('todo', function (result) {
         var todo = result.todo;
         if (todo === 'regInProcess') {
@@ -154,6 +180,7 @@ function getCommandFromBackground() {
 function onOffRegHandler(registration) {
     init();
     if (registration === 'on') {
+        console.log(now() + ' Статус: авторегистрация');
         getCommandFromBackground();
     } else {
     }
