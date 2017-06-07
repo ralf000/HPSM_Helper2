@@ -80,8 +80,7 @@ function isNewTask() {
 
 function checkNewTask() {
     if (!isTasksList()) {
-        registration();
-        return;
+        return registration();
     }
 
     console.log(now() + ' Проверяю наличие новых обращений/инцидентов');
@@ -139,6 +138,10 @@ function registration() {
 
         setTimeout(function () {
             console.log(now() + ' Статус обращения/инцидента: ' + getStatus());
+
+            if ($('#commonMsg').text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1){
+                w.find('button:contains("Обновить")').click();
+            }
 
             if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
                 || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
