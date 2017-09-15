@@ -155,11 +155,11 @@ function registration() {
                 console.log(now() + ' Регистрирую обращение/инцидент под номером ' + form.find('[ref="instance/incident.id"] span').text());
 
             var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-            if (resolution.length !== 0)
+            if (resolution.length)
                 resolution.val('АвтоРегистрация: ' + now());
 
             var title = form.find('input[alias="instance/title"]');
-            if (title.length) {
+            if (title.length && !title.val().length) {
                 title.val('Тема письма не заполнена');
             }
 
