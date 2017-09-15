@@ -139,7 +139,7 @@ function registration() {
         setTimeout(function () {
             console.log(now() + ' Статус обращения/инцидента: ' + getStatus());
 
-            if ($('#commonMsg').text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1){
+            if ($('#commonMsg').text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
                 w.find('button:contains("Обновить")').click();
             }
 
@@ -151,14 +151,17 @@ function registration() {
             }
             var form = getActiveFormByHPSM();
 
-            //логи
             if (form.find('[ref="instance/incident.id"] span').length !== 0)
                 console.log(now() + ' Регистрирую обращение/инцидент под номером ' + form.find('[ref="instance/incident.id"] span').text());
-            ///логи
 
             var resolution = form.find('textarea[name="instance/resolution/resolution"]');
             if (resolution.length !== 0)
                 resolution.val('АвтоРегистрация: ' + now());
+
+            var title = form.find('input[alias="instance/title"]');
+            if (title.length) {
+                title.val('Тема письма не заполнена');
+            }
 
             return (w.find('button:contains("Передать Инженеру")').length !== 0)
                 ? w.find('button:contains("Передать Инженеру")').click()
