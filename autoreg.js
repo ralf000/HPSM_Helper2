@@ -158,8 +158,10 @@ function registration() {
             if (resolution.length)
                 resolution.val('АвтоРегистрация: ' + now());
 
-            var title = form.find('input[alias="instance/title"]');
-            if (title.length && !title.val().length) {
+            var title = form.find('input[name="instance/title"]');
+            if (!title.length)
+                title = form.find('input[name="instance/brief.description"]');
+            if (!title.val().length) {
                 title.val('Тема письма не заполнена');
             }
 
