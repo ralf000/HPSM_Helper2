@@ -11,7 +11,7 @@ function getTitle() {
 }
 
 function getTaskData(callback) {
-    chrome.storage.local.get('taskData', function (result) {
+    chrome.storage.sync.get('taskData', function (result) {
         var task = result.taskData;
         if (task) {
             callback(task);

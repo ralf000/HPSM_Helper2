@@ -59,6 +59,14 @@ function isTasksList() {
 }
 
 /**
+ * Страница с кнопкой "Продолжить"
+ * @returns bool
+ */
+function isContinuePage() {
+    return $('#btnContinue').length;
+}
+
+/**
  * Возвращает статус обращения/инцидента
  * @returns string|null Task status
  */
@@ -71,7 +79,7 @@ function getStatus() {
 }
 
 function getHPSMTabId(callback) {
-    chrome.storage.local.get('hpsmTab', function (result) {
+    chrome.storage.sync.get('hpsmTab', function (result) {
         var hpsmTab = result.hpsmTab;
         callback(hpsmTab);
     });
@@ -79,36 +87,42 @@ function getHPSMTabId(callback) {
 
 function getTopLayer() {
     return '<div id="toplayer" style="\
-                display: none;\
-                background-color: black;\
-                opacity: 0.8;\
-                width: 100%;\
-                height: 100vh;\
+                position: fixed;\
+                top: 0;\
+                right: 0;\
+                left: 0;\
+                bottom: 0;\
                 z-index: 999;\
-                position: absolute;">\
+                opacity: .8;\
+                background-color: #fff;">\
                 <span style="\
-                    display: block;\
-                    color: white;\
+                    margin: auto;\
+                    display: flex;\
+                    flex-flow: column;\
+                    left: 50px;\
+                    color: black;\
+                    font-size: 16px;\
                     position: relative;\
-                    top: 45%;\
-                    left: 45%;">\
-                    Авторегистрация\
-                    <div id="working" style="width: 100px;font-size: 12px;margin-top: 10px;">\
-                        <img src="https://investmoscow.ru/media/3064469/progressbar.gif" alt="" \
-                            style="left: 20px;top: 10px;position: relative;">\
-                    </div>\
-                </span>\
-            </div>';
+                    -webkit-box-align: center;\
+                    -ms-flex-align: center;\
+                    align-items: center;\
+                    justify-content: center;\
+                    transition: transform .3s ease-out,-webkit-transform .3s ease-out;\
+                    min-height: calc(100% - (1.75rem * 2))">\
+                        <img src="http://utilites.2hut.ru/loading.gif" alt="">\
+                        Авторегистрация\
+                        </span>\
+                    </div>';
 }
 
 function clean() {
-    chrome.storage.local.remove('registration');
-    chrome.storage.local.remove('todo');
-    chrome.storage.local.remove('hpsmTab');
+    chrome.storage.sync.remove('registration');
+    chrome.storage.sync.remove('todo');
+    chrome.storage.sync.remove('hpsmTab');
 }
 
 function getAutoRegStatus(callback) {
-    chrome.storage.local.get('registration', function (result) {
+    chrome.storage.sync.get('registration', function (result) {
         var registration = result.registration;
         callback(registration);
     });

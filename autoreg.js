@@ -48,9 +48,12 @@ function update() {
     } else {
         clearInterval(intValId);
         chrome.extension.sendMessage({command: "waitNewTask"}, function () {
-            w.find('button:contains("Обновить")')
-                ? w.find('button:contains("Обновить")').click()
-                : w.find('button:contains("ОК")').click();
+            if (w.find('button:contains("Обновить")').length) {
+                console.log(now() + ' Перехожу на страницу "Продолжить"');
+                location.reload();
+            } else {
+                w.find('button:contains("ОК")').click()
+            }
         });
     }
 
@@ -70,8 +73,8 @@ function wait() {
 function isNewTask() {
     if (taskType === 'Обращение') {
         //Обращение
-        return (taskList.find('[role=gridcell]:contains("Новое")').length !== 0)
-            || (taskList.find('a:contains("Новое")').length !== 0);
+        return (taskList.length && taskList.find('[role=gridcell]:contains("Новое")').length !== 0)
+            || (taskList.length && taskList.find('a:contains("Новое")').length !== 0);
     } else {
         //Инцидент
         return (taskList.find('[role=gridcell]:contains("Направлен в группу")').length !== 0)
@@ -79,13 +82,13 @@ function isNewTask() {
 }
 
 function checkNewTask() {
-    if (!isTasksList()) {
-        return registration();
+    if (isContinuePage()) {
+        chrome.extension.sendMessage({command: "reloadAutoreg"});
+        return $('#btnContinue')[0].click()
     }
+    if (!isTasksList()) return registration();
 
     console.log(now() + ' Проверяю наличие новых обращений/инцидентов');
-
-    // $('button[aria-label="Обновить"]').click();
 
     if (isNewTask()) {
 
@@ -96,8 +99,8 @@ function checkNewTask() {
             console.log(now() + ' Перехожу к регистрации');
 
             if (taskType === 'Обращение') {
-                if ((taskList.find('div:contains("Новое")') !== 0)) {
-                    if (taskList
+                if ((taskList.length && taskList.find('div:contains("Новое")') !== 0)) {
+                    if (taskList.length && taskList
                             .find('div:contains("Новое")')
                             .closest('table.x-grid3-row-table')
                             .find('a') !== 0)
@@ -133,8 +136,6 @@ function registration() {
 
     clearInterval(intValId);
     chrome.extension.sendMessage({command: "waitNewTask"}, function () {
-
-        //w.find('button:contains("Обновить")').click();
 
         setTimeout(function () {
             console.log(now() + ' Статус обращения/инцидента: ' + getStatus());
@@ -175,10 +176,15 @@ function registration() {
 
 function getCommandFromBackground() {
     console.log(now() + ' Получаю команду');
-    chrome.storage.local.get('todo', function (result) {
+    chrome.storage.sync.get('todo', function (result) {
         var todo = result.todo;
         if (todo === 'regInProcess') {
             registration();
+        } else if (todo === 'reloadAutoreg') {
+            chrome.storage.sync.remove('todo');
+            setTimeout(function () {
+                run();
+            }, delay);
         } else {
             checkNewTask();
         }
