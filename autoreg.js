@@ -1,7 +1,7 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
 var taskList = getRecordListByHPSM();
-var waitTime = 1000 * 60 * 10;
+var waitTime = 1000 * 60 * 1;
 var delay = 1000;
 var start = new Date();
 var intValId;
