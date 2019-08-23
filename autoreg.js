@@ -48,9 +48,11 @@ function update() {
     } else {
         clearInterval(intValId);
         chrome.extension.sendMessage({command: "waitNewTask"}, function () {
+            console.log(w.find('button:contains("Обновить")'));
             if (w.find('button:contains("Обновить")').length) {
                 console.log(now() + ' Перехожу на страницу "Продолжить"');
-                location.reload();
+                w.find('button:contains("Обновить")').click();
+                //location.reload();
             } else {
                 w.find('button:contains("ОК")').click()
             }
