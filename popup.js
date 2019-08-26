@@ -11,6 +11,22 @@ function addHandlers() {
             chrome.storage.sync.set({registration: 'off'});
         }
     });
+
+    $('#save-email').on('click', function (e) {
+        e.preventDefault();
+        var email = $('#email-input').val();
+        if (!email.length) return;
+        chrome.storage.sync.set({email: email});
+        $(this).css({'background-color': 'green'})
+    });
+
+    $('#save-password').on('click', function (e) {
+        e.preventDefault();
+        var password = $('#password-input').val();
+        if (!password.length) return;
+        chrome.storage.sync.set({password: password});
+        $(this).css({'background-color': 'green'})
+    });
 }
 
 function setAutoRegStatus() {
@@ -51,11 +67,26 @@ function saveCurrentTab() {
 }
 
 
+function fillFields() {
+    chrome.storage.sync.get('email', function (result) {
+        if (result.email.length) {
+            $('#email-input').val(result.email);
+        }
+    });
+    chrome.storage.sync.get('password', function (result) {
+        console.log(result.password);
+        if (result.password.length) {
+            $('#password-input').val(result.password);
+        }
+    });
+}
+
 function init() {
     $.getJSON('data.json', appendBtns);
     addHandlers();
     setAutoRegStatus();
     saveCurrentTab();
+    fillFields();
 }
 
 

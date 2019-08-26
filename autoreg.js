@@ -6,6 +6,7 @@ var delay = 1000;
 var start = new Date();
 var intValId;
 var taskType = '';
+var emailUrl = 'https://utilites.2hut.ru/hpsm_helper/send-email.php';
 
 function now() {
     return (new Date().toLocaleString());
@@ -50,7 +51,7 @@ function update() {
         chrome.extension.sendMessage({command: "waitNewTask"}, function () {
             console.log(w.find('button:contains("Обновить")'));
             if (w.find('button:contains("Обновить")').length) {
-                console.log(now() + ' Перехожу на страницу "Продолжить"');
+                console.log(now() + ' Обновляю список обращений/инцидентов"');
                 w.find('button:contains("Обновить")').click();
                 //location.reload();
             } else {
@@ -86,6 +87,7 @@ function isNewTask() {
 function checkNewTask() {
     if (isContinuePage()) {
         chrome.extension.sendMessage({command: "reloadAutoreg"});
+        console.log(now() + ' Сессия истекла. Возвращаюсь на страницу со списком инцидентов/обращений');
         return $('#btnContinue')[0].click()
     }
     if (!isTasksList()) return registration();
@@ -154,8 +156,11 @@ function registration() {
             }
             var form = getActiveFormByHPSM();
 
-            if (form.find('[ref="instance/incident.id"] span').length !== 0)
-                console.log(now() + ' Регистрирую обращение/инцидент под номером ' + form.find('[ref="instance/incident.id"] span').text());
+            var number = '';
+            if (form.find('[ref="instance/incident.id"] span').length !== 0) {
+                number = form.find('[ref="instance/incident.id"] span').text();
+                console.log(now() + ' Регистрирую обращение/инцидент под номером ' + number);
+            }
 
             var resolution = form.find('textarea[name="instance/resolution/resolution"]');
             if (resolution.length)
@@ -167,6 +172,8 @@ function registration() {
             if (!title.val().length) {
                 title.val('Тема письма не заполнена');
             }
+
+            sendEmail(number, title, now());
 
             return (w.find('button:contains("Передать Инженеру")').length !== 0)
                 ? w.find('button:contains("Передать Инженеру")').click()
@@ -185,10 +192,44 @@ function getCommandFromBackground() {
         } else if (todo === 'reloadAutoreg') {
             chrome.storage.sync.remove('todo');
             setTimeout(function () {
+                console.log(now() + ' Перезапуская авторегистрацию после истечения сессии');
                 run();
             }, delay);
         } else {
             checkNewTask();
+        }
+    });
+}
+
+function sendEmailViaAjax(number, title, date, email, password) {
+    $.ajax({
+        url: emailUrl,
+        type: "POST",
+        dataType: 'json',
+        data: {number: number, title: title, date: date, email: email, password: password},
+        success: function (data) {
+            if (data.status === 'success') {
+                console.log(now() + ' ' + data.message);
+            } else {
+                console.error(now() + ' ' + data.message)
+            }
+        },
+        error: function (data) {
+            console.error(data);
+        }
+    });
+}
+
+function sendEmail(number, title, date) {
+    chrome.storage.sync.get('password', function (result) {
+        if (result.password.length) {
+            var password = result.password;
+            chrome.storage.sync.get('email', function (result) {
+                if (result.email.length) {
+                var email = result.email;
+                    sendEmailViaAjax(number, title, date, email, password)
+                }
+            });
         }
     });
 }

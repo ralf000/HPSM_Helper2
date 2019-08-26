@@ -5,7 +5,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://sm.mos.ru/*/*"
+        "https://sm.mos.ru/*/*",
+        "https://utilites.2hut.ru/*"
       ],
       "js": [
         "data.json",
@@ -21,7 +22,8 @@
   ],
   "permissions": [
     "storage",
-    "https://sm.mos.ru/*/*"
+    "https://sm.mos.ru/*/*",
+    "https://utilites.2hut.ru/*"
   ],
   "browser_action": {
     "default_title": "HPSM Helper",
