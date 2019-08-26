@@ -173,7 +173,7 @@ function registration() {
                 title.val('Тема письма не заполнена');
             }
 
-            sendEmail(number, title, now());
+            //sendEmail(number, title, now());
 
             return (w.find('button:contains("Передать Инженеру")').length !== 0)
                 ? w.find('button:contains("Передать Инженеру")').click()
