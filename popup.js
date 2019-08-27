@@ -72,12 +72,14 @@ function fillFields() {
     chrome.storage.sync.get('email', function (result) {
         if (result.email.length) {
             $('#email-input').val(result.email);
+            $('#save-email').css({'background-color': 'green'});
         }
     });
     chrome.storage.sync.get('password', function (result) {
         console.log(result.password);
         if (result.password.length) {
             $('#password-input').val(result.password);
+            $('#save-password').css({'background-color': 'green'});
         }
     });
 }
