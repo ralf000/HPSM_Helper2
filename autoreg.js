@@ -8,10 +8,6 @@ var intValId;
 var taskType = '';
 var emailUrl = 'https://utilites.2hut.ru/hpsm_helper/send-email.php';
 
-function now() {
-    return (new Date().toLocaleString());
-}
-
 /**
  * отслеживает состояние программы
  */
@@ -42,14 +38,9 @@ function addTopLayerOnPage() {
 }
 
 function update() {
-    if (new Date() - start < waitTime) {
-        setTimeout(function () {
-            return update();
-        }, waitTime / 10);
-    } else {
+    if (new Date() - start >= waitTime) {
         clearInterval(intValId);
         chrome.extension.sendMessage({command: "waitNewTask"}, function () {
-            console.log(w.find('button:contains("Обновить")'));
             if (w.find('button:contains("Обновить")').length) {
                 console.log(now() + ' Обновляю список обращений/инцидентов"');
                 w.find('button:contains("Обновить")').click();
@@ -88,50 +79,167 @@ function checkNewTask() {
     if (isContinuePage()) {
         chrome.extension.sendMessage({command: "reloadAutoreg"});
         console.log(now() + ' Сессия истекла. Возвращаюсь на страницу со списком инцидентов/обращений');
-        return $('#btnContinue')[0].click()
+        return $('#btnContinue').length
+            ? $('#btnContinue')[0].click()
+            : $('#loginBtn').click()
     }
     if (!isTasksList()) return registration();
 
     console.log(now() + ' Проверяю наличие новых обращений/инцидентов');
 
     if (isNewTask()) {
+        isCorrectSearchEnvironment(entranceToTask);
+    } else {
+        waitWithCorrectEnvironment();
+    }
+}
 
-        console.log(now() + ' Обнаружено новое обращение/инцидент');
+function entranceToTask() {
 
-        chrome.extension.sendMessage({command: "newTask"}, function () {
+    console.log(now() + ' Обнаружено новое обращение/инцидент');
 
-            console.log(now() + ' Перехожу к регистрации');
+    chrome.extension.sendMessage({command: "newTask"}, function () {
 
-            if (taskType === 'Обращение') {
-                if ((taskList.length && taskList.find('div:contains("Новое")') !== 0)) {
-                    if (taskList.length && taskList
-                            .find('div:contains("Новое")')
-                            .closest('table.x-grid3-row-table')
-                            .find('a') !== 0)
-                        return taskList
-                            .find('div:contains("Новое")')
-                            .closest('table.x-grid3-row-table')
-                            .find('a')[0]
-                            .click();
-                }
-                return taskList
-                    .find('a:contains("Новое")')[0]
-                    .click();
-            } else {
-                if (taskList.find('div:contains("Направлен в группу")') !== 0) {
+        console.log(now() + ' Перехожу к регистрации');
+
+        if (taskType === 'Обращение') {
+            if ((taskList.length && taskList.find('div:contains("Новое")') !== 0)) {
+                if (taskList.length && taskList
+                    .find('div:contains("Новое")')
+                    .closest('table.x-grid3-row-table')
+                    .find('a') !== 0)
                     return taskList
-                        .find('div:contains("Направлен в группу")')
+                        .find('div:contains("Новое")')
                         .closest('table.x-grid3-row-table')
                         .find('a')[0]
                         .click();
-                }
             }
-        });
-
-    }
-    return wait();
+            return taskList
+                .find('a:contains("Новое")')[0]
+                .click();
+        } else {
+            if (taskList.find('div:contains("Направлен в группу")') !== 0) {
+                return taskList
+                    .find('div:contains("Направлен в группу")')
+                    .closest('table.x-grid3-row-table')
+                    .find('a')[0]
+                    .click();
+            }
+        }
+    });
 }
 
+/**
+ * Переходит в режим ожидания новый обращений/инцидентов
+ * попутно устанавливая сохраняя/устанавливает очередь и представление
+ * которые были выбраны при старте
+ */
+function waitWithCorrectEnvironment() {
+    chrome.storage.sync.get('initRegistration', function (result) {
+        var initRegistration = result.initRegistration;
+        if (initRegistration && initRegistration === 'on') {
+            console.log(now() + ' Начинаю поиск и авторегистрацию новых обращений/инцидентов');
+            chrome.storage.sync.remove('initRegistration');
+            saveSearchEnvironment();
+        }
+        setSearchEnvironment(initRegistration);
+    });
+}
+
+/**
+ * Сохраняет выбранные очередь и представление при первом запуске
+ */
+function saveSearchEnvironment() {
+    var queue = getQueue();
+    var representation = getRepresentation();
+    if (queue && representation) {
+        console.log(now() + ' Сохраняю текущую очередь: "' + queue + '" и представление: "' + representation + '"');
+        chrome.storage.sync.set({queueName: queue});
+        chrome.storage.sync.set({representationName: representation});
+    }
+}
+
+/**
+ * Устанавливает очередь и представление, которые были выбраны при старте (если они изменились)
+ * @param initRegistration
+ */
+function setSearchEnvironment(initRegistration) {
+    chrome.storage.sync.get('queueName', function (result) {
+        var queueName = result.queueName;
+        chrome.storage.sync.get('representationName', function (result) {
+            var representationName = result.representationName;
+
+            var currentQueue = getQueue();
+            var currentRepresentation = getRepresentation();
+
+            if (!initRegistration) {
+                if (currentQueue !== queueName) {
+                    console.log(now() + ' Устанавливаю очередь: "' + queueName + '"');
+                    chrome.extension.sendMessage({command: "setQueue"});
+                    return setQueue(queueName);
+                }
+                if (currentRepresentation !== representationName) {
+                    console.log(now() + ' Устанавливаю представление: "' + representationName + '"');
+                    chrome.extension.sendMessage({command: "setRepresentation"});
+                    return setRepresentation(representationName);
+                }
+            }
+            return wait();
+        });
+    });
+}
+
+function isCorrectSearchEnvironment(callback) {
+    var isCorrect = true;
+    chrome.storage.sync.get('queueName', function (result) {
+        var queueName = result.queueName;
+        chrome.storage.sync.get('representationName', function (result) {
+            var representationName = result.representationName;
+
+            var currentQueue = getQueue();
+            var currentRepresentation = getRepresentation();
+
+            isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
+            if (isCorrect) {
+                callback();
+            }
+        });
+    });
+}
+
+/**
+ * Устанавливает очередь
+ * @param queueName
+ */
+function setQueue(queueName) {
+    var form = getActiveFrameByHPSM();
+    form.find('#X4Button').click();
+    setTimeout(function () {
+        $.each(form.find('#X4Popup .x-combo-list-item'), function (index, queueItem) {
+            queueItem = $(queueItem);
+            if (queueItem.text().indexOf(queueName) === 0) {
+                return queueItem.click();
+            }
+        });
+    }, delay);
+}
+
+/**
+ * Устанавливает предоставление
+ * @param representationName
+ */
+function setRepresentation(representationName) {
+    var form = getActiveFrameByHPSM();
+    form.find('#X6Button').click();
+    setTimeout(function () {
+        $.each(form.find('#X6Popup .x-combo-list-item'), function (index, representationItem) {
+            representationItem = $(representationItem);
+            if (representationItem.text().indexOf(representationName) === 0) {
+                return representationItem.click();
+            }
+        });
+    }, delay);
+}
 
 function registration() {
     if (isTasksList()) return checkNewTask();
@@ -139,97 +247,55 @@ function registration() {
     console.log(now() + ' Регистрация обращения/инцидента в процессе');
 
     clearInterval(intValId);
-    chrome.extension.sendMessage({command: "waitNewTask"}, function () {
 
-        setTimeout(function () {
-            console.log(now() + ' Статус обращения/инцидента: ' + getStatus());
+    console.log(now() + ' Статус обращения/инцидента: ' + getStatus());
 
-            if ($('#commonMsg').text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
-                w.find('button:contains("Обновить")').click();
-            }
+    if ($('#commonMsg').text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
+        w.find('button:contains("Обновить")').click();
+    }
 
-            if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
-                || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
-            ) {
-                console.log(now() + ' Выход из регистрации обращения');
-                return w.find('button:contains("ОК")').click();
-            }
-            var form = getActiveFormByHPSM();
+    chrome.extension.sendMessage({command: "newTask"}, function () {
 
-            var number = '';
-            if (form.find('[ref="instance/incident.id"] span').length !== 0) {
-                number = form.find('[ref="instance/incident.id"] span').text();
-                console.log(now() + ' Регистрирую обращение/инцидент под номером ' + number);
-            }
+        var number = getNumber();
+        var title = getTitle();
 
-            var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-            if (resolution.length)
-                resolution.val('АвтоРегистрация: ' + now());
+        if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
+            || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
+        ) {
+            console.log(now() + ' Выход из регистрации обращения');
 
-            var title = form.find('input[name="instance/title"]');
-            if (!title.length)
-                title = form.find('input[name="instance/brief.description"]');
-            if (!title.val().length) {
-                title.val('Тема письма не заполнена');
-            }
+            sendEmail(emailUrl, number, title, now());
 
-            //sendEmail(number, title, now());
+            return w.find('button:contains("ОК")').click();
+        }
+        console.log(now() + ' Регистрирую обращение/инцидент под номером ' + number);
 
-            return (w.find('button:contains("Передать Инженеру")').length !== 0)
-                ? w.find('button:contains("Передать Инженеру")').click()
-                : w.find('button:contains("В работу")').click();
-        }, delay * 5);
+        var form = getActiveFormByHPSM();
+        var resolution = form.find('textarea[name="instance/resolution/resolution"]');
+        if (resolution.length)
+            resolution.val('АвтоРегистрация: ' + now());
 
+        return (w.find('button:contains("Передать Инженеру")').length !== 0)
+            ? w.find('button:contains("Передать Инженеру")').click()
+            : w.find('button:contains("В работу")').click();
     });
 }
 
 function getCommandFromBackground() {
     console.log(now() + ' Получаю команду');
+
     chrome.storage.sync.get('todo', function (result) {
         var todo = result.todo;
+        chrome.storage.sync.remove('todo');
         if (todo === 'regInProcess') {
             registration();
         } else if (todo === 'reloadAutoreg') {
-            chrome.storage.sync.remove('todo');
             setTimeout(function () {
-                console.log(now() + ' Перезапуская авторегистрацию после истечения сессии');
+                console.log(now() + ' Перезапускаю авторегистрацию после истечения сессии');
                 run();
             }, delay);
         } else {
             checkNewTask();
-        }
-    });
-}
-
-function sendEmailViaAjax(number, title, date, email, password) {
-    $.ajax({
-        url: emailUrl,
-        type: "POST",
-        dataType: 'json',
-        data: {number: number, title: title, date: date, email: email, password: password},
-        success: function (data) {
-            if (data.status === 'success') {
-                console.log(now() + ' ' + data.message);
-            } else {
-                console.error(now() + ' ' + data.message)
-            }
-        },
-        error: function (data) {
-            console.error(data);
-        }
-    });
-}
-
-function sendEmail(number, title, date) {
-    chrome.storage.sync.get('password', function (result) {
-        if (result.password.length) {
-            var password = result.password;
-            chrome.storage.sync.get('email', function (result) {
-                if (result.email.length) {
-                var email = result.email;
-                    sendEmailViaAjax(number, title, date, email, password)
-                }
-            });
         }
     });
 }

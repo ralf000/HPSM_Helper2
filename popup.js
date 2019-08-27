@@ -3,6 +3,7 @@ function addHandlers() {
         chrome.storage.sync.remove('todo');
         if ($(this).prop('checked')) {
             chrome.storage.sync.set({registration: 'on'});
+            chrome.storage.sync.set({initRegistration: 'on'});
             chrome.tabs.executeScript(null, {file: 'autoreg.js'});
             setTimeout(function () {
                 window.close();
@@ -80,6 +81,7 @@ function fillFields() {
         }
     });
 }
+
 
 function init() {
     $.getJSON('data.json', appendBtns);

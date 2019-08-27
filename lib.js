@@ -17,7 +17,7 @@ function getActiveTabIdByHPSM() {
         return null;
     var id = tabActive.attr('id');
     id = id.split('__');
-    return id[id.length-1];
+    return id[id.length - 1];
 }
 
 /**
@@ -26,7 +26,7 @@ function getActiveTabIdByHPSM() {
  */
 function getActiveWindowByHPSM() {
     var tabId = getActiveTabIdByHPSM();
-    return (tabId && tabId.length > 0) ? $('.x-tab-panel-bwrap').find('#'+tabId) : $('.x-tab-panel-bwrap');
+    return (tabId && tabId.length > 0) ? $('.x-tab-panel-bwrap').find('#' + tabId) : $('.x-tab-panel-bwrap');
 }
 
 /**
@@ -36,6 +36,36 @@ function getActiveWindowByHPSM() {
 function getActiveFrameByHPSM() {
     var w = getActiveWindowByHPSM();
     return (w) ? w.find('iframe').contents() : false;
+}
+
+/**
+ * Получает номер обращения/инцидента
+ */
+function getNumber() {
+    var form = getActiveFormByHPSM();
+
+    var number = 'Неизвестный номер';
+    if (form.length && form.find('[ref="instance/incident.id"] span').length) {
+        number = form.find('[ref="instance/incident.id"] span').text();
+    } else if (form.length && form.find('#keyValues').length) {
+        number = form.find('#keyValues').val();
+    }
+    return number;
+}
+
+/**
+ * Получает заголовок обращения/инцидента
+ */
+function getTitle() {
+    var form = getActiveFormByHPSM();
+
+    var title = 'Тема письма не заполнена';
+    if (form.length && form.find('input[name="instance/title"]').length && form.find('input[name="instance/title"]').val().length) {
+        title = form.find('input[name="instance/title"]').val();
+    } else if (form.length && form.find('input[name="instance/brief.description"]').length && form.find('input[name="instance/brief.description"]').val().length) {
+        title = form.find('input[name="instance/brief.description"]').val();
+    }
+    return title;
 }
 
 /**
@@ -59,11 +89,11 @@ function isTasksList() {
 }
 
 /**
- * Страница с кнопкой "Продолжить"
+ * Страница с кнопкой "Продолжить" или "Войти в систему"
  * @returns bool
  */
 function isContinuePage() {
-    return $('#btnContinue').length;
+    return $('#btnContinue').length || $('#loginBtn').length;
 }
 
 /**
@@ -92,7 +122,7 @@ function getTopLayer() {
                 right: 0;\
                 left: 0;\
                 bottom: 0;\
-                z-index: 999;\
+                z-index: 9999999;\
                 opacity: .8;\
                 background-color: #fff;">\
                 <span style="\
@@ -109,7 +139,7 @@ function getTopLayer() {
                     justify-content: center;\
                     transition: transform .3s ease-out,-webkit-transform .3s ease-out;\
                     min-height: calc(100% - (1.75rem * 2))">\
-                        <img src="http://utilites.2hut.ru/loading.gif" alt="">\
+                        <img src="http://utilites.2hut.ru/loading.gif" style="width: 400px" alt="">\
                         Авторегистрация\
                         </span>\
                     </div>';
@@ -126,4 +156,58 @@ function getAutoRegStatus(callback) {
         var registration = result.registration;
         callback(registration);
     });
+}
+
+function getQueue() {
+    var form = getActiveFormByHPSM();
+    var queueInput = $(form.find('#X4'));
+    return queueInput.length ? queueInput.val() : '';
+}
+
+function getRepresentation() {
+    var form = getActiveFormByHPSM();
+    var representationInput = $(form.find('#X6'));
+    return representationInput.length ? representationInput.val() : '';
+}
+
+function sendEmailViaAjax(url, number, title, date, email, password) {
+    $.ajax({
+        url: url,
+        type: "POST",
+        dataType: 'json',
+        data: {number: number, title: title, date: date, email: email, password: password},
+        success: function (data) {
+            if (data.status === 'success') {
+                console.log(now() + ' ' + data.message);
+            } else {
+                console.error(now() + ' ' + data.message)
+            }
+        },
+        error: function (data) {
+            console.error(data);
+        }
+    });
+}
+
+function sendEmail(url, number, title, date) {
+    chrome.storage.sync.get('password', function (result1) {
+        if (result1.password.length) {
+            var password = result1.password;
+            chrome.storage.sync.get('email', function (result2) {
+                if (result2.email.length) {
+                    var email = result2.email;
+                    console.log(now() + ' Отправка письма об авторегистрации обращения/инцидента ' + number + ' на адрес ' + email);
+                    return sendEmailViaAjax(url, number, title, date, email, password)
+                } else {
+                    console.info(now() + ' Не введен email для отправки писем');
+                }
+            });
+        } else {
+            console.info(now() + ' Не введен пароль для отправки писем');
+        }
+    });
+}
+
+function now() {
+    return (new Date().toLocaleString());
 }

@@ -1,6 +1,6 @@
-function commandHandler(command) {
-    if (!command)
-        return false;
+function commandHandler(command, delay) {
+    if (!command) return false;
+    delay = delay || 1000 * 15;
 
     setTimeout(function () {
 
@@ -21,12 +21,12 @@ function commandHandler(command) {
             chrome.tabs.executeScript(hpsmTab, {file: 'autoreg.js'});
         })
 
-    }, 1000 * 10);
+    }, delay);
 }
 
 chrome.extension.onMessage.addListener(
     function (request) {
-        commandHandler(request.command);
+        commandHandler(request.command, request.delay);
     });
 
 
