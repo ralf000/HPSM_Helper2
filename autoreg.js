@@ -41,9 +41,10 @@ function update() {
     if (new Date() - start >= waitTime) {
         clearInterval(intValId);
         chrome.extension.sendMessage({command: "waitNewTask"}, function () {
-            if (w.find('button:contains("Обновить")').length) {
-                console.log(now() + ' Обновляю список обращений/инцидентов"');
-                w.find('button:contains("Обновить")').click();
+            var updateBtn = w.find('button:contains("Обновить")');
+            if (updateBtn.length) {
+                console.log(now() + ' Обновляю список обращений/инцидентов');
+                updateBtn.click();
                 //location.reload();
             } else {
                 w.find('button:contains("ОК")').click()
@@ -250,14 +251,24 @@ function registration() {
 
     console.log(now() + ' Статус обращения/инцидента: ' + getStatus());
 
-    if ($('#commonMsg').text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
-        w.find('button:contains("Обновить")').click();
+    var commonMsg = $('#commonMsg');
+    if (commonMsg.length) {
+        console.log(now() + ' ' + commonMsg.text());
+
+        if (commonMsg.text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
+            w.find('button:contains("Обновить")').click();
+        }
     }
 
     chrome.extension.sendMessage({command: "newTask"}, function () {
 
         var number = getNumber();
         var title = getTitle();
+
+        var toEngineerBtn = w.find('button:contains("Передать Инженеру")');
+        var toWorkBtn = w.find('button:contains("В работу")');
+        var OKBtn = w.find('button:contains("ОК")');
+        var cancelBtn = w.find('button:contains("Отмена")');
 
         if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
             || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
@@ -266,7 +277,14 @@ function registration() {
 
             sendEmail(emailUrl, number, title, now());
 
-            return w.find('button:contains("ОК")').click();
+            if (OKBtn.length) {
+                console.log(now() + ' нажимаю на кнопку "ОК"');
+                return OKBtn.click();
+            }
+            if (cancelBtn.length) {
+                console.log(now() + ' нажимаю на кнопку "Отмена"');
+                return cancelBtn.click();
+            }
         }
         console.log(now() + ' Регистрирую обращение/инцидент под номером ' + number);
 
@@ -275,9 +293,23 @@ function registration() {
         if (resolution.length)
             resolution.val('АвтоРегистрация: ' + now());
 
-        return (w.find('button:contains("Передать Инженеру")').length !== 0)
-            ? w.find('button:contains("Передать Инженеру")').click()
-            : w.find('button:contains("В работу")').click();
+        if (toEngineerBtn.length) {
+            console.log(now() + ' нажимаю на кнопку "Передать Инженеру"');
+            return toEngineerBtn.click()
+        }
+        if (toWorkBtn.length) {
+            console.log(now() + ' нажимаю на кнопку "В работу"');
+            return toWorkBtn.click()
+        }
+        if (OKBtn.length) {
+            console.log(now() + ' нажимаю на кнопку "ОК"');
+            return OKBtn.click();
+        }
+        if (cancelBtn.length) {
+            console.log(now() + ' нажимаю на кнопку "Отмена"');
+            return cancelBtn.click();
+        }
+        console.log(now() + ' Ошибка: не найдено кнопок для продолжения авторегистрации');
     });
 }
 
