@@ -140,7 +140,8 @@ function getTopLayer() {
                     transition: transform .3s ease-out,-webkit-transform .3s ease-out;\
                     min-height: calc(100% - (1.75rem * 2))">\
                         <img src="http://utilites.2hut.ru/loading.gif" style="width: 400px" alt="">\
-                        Авторегистрация\
+                        Авторегистрация<br>\
+                        <a href="#" id="sendLogs">Отправить логи на почту</a>\
                         </span>\
                     </div>';
 }
@@ -179,6 +180,80 @@ function sendEmailViaAjax(url, number, title, date, email, password) {
         success: function (data) {
             if (data.status === 'success') {
                 console.log(now() + ' ' + data.message);
+            } else {
+                console.error(now() + ' ' + data.message)
+            }
+        },
+        error: function (data) {
+            console.error(data);
+        }
+    });
+}
+
+function writeToLog(message, url, date) {
+    date = date || now();
+    url = url || logUrl;
+
+    chrome.storage.sync.get('password', function (result1) {
+        if (result1.password.length) {
+            var password = result1.password;
+            chrome.storage.sync.get('email', function (result2) {
+                if (result2.email.length) {
+                    var email = result2.email;
+                    $.ajax({
+                        url: url,
+                        type: "POST",
+                        dataType: 'json',
+                        data: {type: 'write', message: message, email: email, password: password, date: date},
+                        success: function (data) {
+                            if (data.status === 'success') {
+                                console.log(date + ' ' + message);
+                            } else {
+                                console.error(now() + ' ' + data.message)
+                            }
+                        },
+                        error: function (data) {
+                            console.error(data);
+                        }
+                    });
+                } else {
+                    console.info(now() + ' Не введен email для отправки писем');
+                }
+            });
+        } else {
+            console.info(now() + ' Не введен пароль для отправки писем');
+        }
+    });
+}
+
+function sendLog(url) {
+    chrome.storage.sync.get('password', function (result1) {
+        if (result1.password.length) {
+            var password = result1.password;
+            chrome.storage.sync.get('email', function (result2) {
+                if (result2.email.length) {
+                    var email = result2.email;
+                    return sendLogsToEmail(url, password, email)
+                } else {
+                    console.info(now() + ' Не введен email для отправки писем');
+                }
+            });
+        } else {
+            console.info(now() + ' Не введен пароль для отправки писем');
+        }
+    });
+}
+
+function sendLogsToEmail(url, password, email, onSuccessCallback) {
+    $.ajax({
+        url: url,
+        type: "POST",
+        dataType: 'json',
+        data: {type: 'read', password: password, email: email},
+        success: function (data) {
+            if (data.status === 'success') {
+                console.log(now() + ' ' + data.message);
+                $('#sendLogs').text(data.message);
             } else {
                 console.error(now() + ' ' + data.message)
             }
