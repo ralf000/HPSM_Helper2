@@ -16,9 +16,9 @@ function checkStatusProgram() {
     intValId = setInterval(function () {
         getAutoRegStatus(function (registration) {
             if (registration === 'off') {
-                clearInterval(intValId);
                 deleteTopLayer();
                 sendLog(logUrl);
+                return clearInterval(intValId);
             }
         });
     }, delay);
