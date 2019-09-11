@@ -1,11 +1,30 @@
-/**
- * переводит первый символ в верхний регистр
- * @param string
- * @returns {string}
- */
-function ucFirst(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
+var emailUrl = 'https://utilites.2hut.ru/hpsm_helper/send-email.php';
+var logUrl = 'https://utilites.2hut.ru/hpsm_helper/log.php';
+
+function handleContinuePage() {
+    writeToLog('Сессия истекла. Возвращаюсь на страницу со списком инцидентов/обращений');
+
+    chrome.extension.sendMessage({command: "checkingOnEntryPage", delay: 1000 * 60});
+
+    chrome.storage.sync.get('loginHPSM', function (result) {
+        var loginHPSM = result.loginHPSM;
+        chrome.storage.sync.get('passwordHPSM', function (result) {
+            var passwordHPSM = result.passwordHPSM;
+            if (loginHPSM) {
+                $('#LoginUsername').val(loginHPSM);
+            }
+            if (passwordHPSM) {
+                $('#LoginPassword').val(passwordHPSM);
+            }
+            setTimeout(function () {
+                return $('#btnContinue').length
+                    ? $('#btnContinue')[0].click()
+                    : $('#loginBtn').click();
+            }, 300);
+        });
+    });
 }
+
 
 /**
  * Возращает id для активного окна, вычисляемый по активной вкладке
@@ -150,6 +169,7 @@ function clean() {
     chrome.storage.sync.remove('registration');
     chrome.storage.sync.remove('todo');
     chrome.storage.sync.remove('hpsmTab');
+    chrome.storage.sync.remove('handlingContinuePage');
 }
 
 function getAutoRegStatus(callback) {
@@ -194,6 +214,8 @@ function writeToLog(message, url, date) {
     date = date || now();
     url = url || logUrl;
 
+    console.log(date + ': ' + message);
+
     chrome.storage.sync.get('password', function (result1) {
         if (result1.password.length) {
             var password = result1.password;
@@ -207,7 +229,6 @@ function writeToLog(message, url, date) {
                         data: {type: 'write', message: message, email: email, password: password, date: date},
                         success: function (data) {
                             if (data.status === 'success') {
-                                console.log(date + ' ' + message);
                             } else {
                                 console.error(now() + ' ' + data.message)
                             }

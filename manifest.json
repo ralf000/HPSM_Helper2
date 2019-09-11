@@ -1,7 +1,7 @@
 {
   "name": "HPSM Helper",
   "description": "Упрощает работу в системой HPSM",
-  "version": "4.6",
+  "version": "6.0",
   "content_scripts": [
     {
       "matches": [
@@ -10,13 +10,10 @@
       ],
       "js": [
         "data.json",
-        "sweet-alert.js",
         "lib.js",
         "jquery.min.js"
       ],
-      "css": [
-        "sweet-alert.css"
-      ],
+      "css": [],
       "all_frames": true
     }
   ],

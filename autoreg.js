@@ -2,12 +2,9 @@
 var w = getActiveWindowByHPSM();
 var taskList = getRecordListByHPSM();
 var waitTime = 1000 * 60 * 10;
-var delay = 1000;
-var start = new Date();
+var delay = 500;
 var intValId;
 var taskType = '';
-var emailUrl = 'https://utilites.2hut.ru/hpsm_helper/send-email.php';
-var logUrl = 'https://utilites.2hut.ru/hpsm_helper/log.php';
 
 /**
  * отслеживает состояние программы
@@ -17,11 +14,12 @@ function checkStatusProgram() {
         getAutoRegStatus(function (registration) {
             if (registration === 'off') {
                 deleteTopLayer();
+                clean();
                 sendLog(logUrl);
                 return clearInterval(intValId);
             }
         });
-    }, delay);
+    }, delay * 2);
 }
 
 function deleteTopLayer() {
@@ -40,20 +38,18 @@ function addTopLayerOnPage() {
 }
 
 function update() {
-    if (new Date() - start >= waitTime) {
-        clearInterval(intValId);
-        chrome.extension.sendMessage({command: "waitNewTask"}, function () {
-            var updateBtn = w.find('button:contains("Обновить")');
-            if (updateBtn.length) {
-                writeToLog('Обновляю список обращений/инцидентов');
-                updateBtn.click();
-                //location.reload();
-            } else {
-                w.find('button:contains("ОК")').click()
-            }
-        });
-    }
+    clearInterval(intValId);
 
+    chrome.extension.sendMessage({command: "checkForNewTasks"}, function () {
+        var updateBtn = w.find('button:contains("Обновить")');
+        if (updateBtn.length) {
+            writeToLog('Обновляю список обращений/инцидентов');
+            updateBtn.click();
+            //location.reload();
+        } else {
+            w.find('button:contains("ОК")').click()
+        }
+    });
 }
 
 function wait() {
@@ -61,10 +57,8 @@ function wait() {
     writeToLog('Статус: ожидание. До следующей проверки новых обращений/инцидентов: ' + waitTime / 60 / 1000 + ' минут');
 
     addTopLayerOnPage();
-    var t = setTimeout(function () {
-        clearTimeout(t);
-        update();
-    }, waitTime);
+
+    chrome.extension.sendMessage({command: "updateTaskList", delay: waitTime});
 }
 
 function isNewTask() {
@@ -79,13 +73,6 @@ function isNewTask() {
 }
 
 function checkNewTask() {
-    if (isContinuePage()) {
-        chrome.extension.sendMessage({command: "reloadAutoreg"});
-        writeToLog('Сессия истекла. Возвращаюсь на страницу со списком инцидентов/обращений');
-        return $('#btnContinue').length
-            ? $('#btnContinue')[0].click()
-            : $('#loginBtn').click()
-    }
     if (!isTasksList()) return registration();
 
     writeToLog('Проверяю наличие новых обращений/инцидентов');
@@ -177,12 +164,12 @@ function setSearchEnvironment(initRegistration) {
 
             if (!initRegistration) {
                 if (currentQueue !== queueName) {
-                    writeToLog('Устанавливаю очередь: "' + queueName);
+                    writeToLog('Устанавливаю очередь: ' + queueName);
                     chrome.extension.sendMessage({command: "setQueue"});
                     return setQueue(queueName);
                 }
                 if (currentRepresentation !== representationName) {
-                    writeToLog('Устанавливаю представление: "' + representationName);
+                    writeToLog('Устанавливаю представление: ' + representationName);
                     chrome.extension.sendMessage({command: "setRepresentation"});
                     return setRepresentation(representationName);
                 }
@@ -258,7 +245,8 @@ function registration() {
         writeToLog(commonMsg.text());
 
         if (commonMsg.text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
-            w.find('button:contains("Обновить")').click();
+            chrome.extension.sendMessage({command: "moveToTaskList"});
+            return w.find('button:contains("Отмена")').click();
         }
     }
 
@@ -308,7 +296,7 @@ function registration() {
             return OKBtn.click();
         }
         if (cancelBtn.length) {
-           writeToLog('Нажимаю на кнопку: Отмена');
+            writeToLog('Нажимаю на кнопку: Отмена');
             return cancelBtn.click();
         }
         writeToLog('Ошибка: не найдено кнопок для продолжения авторегистрации')
@@ -322,15 +310,12 @@ function getCommandFromBackground() {
         var todo = result.todo;
         chrome.storage.sync.remove('todo');
         if (todo === 'regInProcess') {
-            registration();
-        } else if (todo === 'reloadAutoreg') {
-            setTimeout(function () {
-                writeToLog('Перезапускаю авторегистрацию после истечения сессии');
-                run();
-            }, delay);
-        } else {
-            checkNewTask();
+            return registration();
         }
+        if (todo === 'updateTaskList') {
+            return  update();
+        }
+        checkNewTask();
     });
 }
 
@@ -338,8 +323,10 @@ function onOffRegHandler(registration) {
     init();
     if (registration === 'on') {
         writeToLog('Статус: авторегистрация');
+        if (isContinuePage()) {
+            return handleContinuePage();
+        }
         getCommandFromBackground();
-    } else {
     }
 }
 

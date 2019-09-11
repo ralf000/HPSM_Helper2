@@ -6,10 +6,8 @@ function commandHandler(command, delay) {
 
         if (command === "newTask")
             chrome.storage.sync.set({todo: 'regInProcess'});
-        else if (command === "waitNewTask")
-            chrome.storage.sync.set({todo: 'waitNewTask'});
-        else if (command === "reloadAutoreg")
-            chrome.storage.sync.set({todo: 'reloadAutoreg'});
+        else if (command === "updateTaskList")
+            chrome.storage.sync.set({todo: 'updateTaskList'});
         else if (command === "deleteTopLayer") {
             getHPSMTabId(function (hpsmTab) {
                 

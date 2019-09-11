@@ -28,6 +28,22 @@ function addHandlers() {
         chrome.storage.sync.set({password: password});
         $(this).css({'background-color': 'green'})
     });
+
+    $('#save-hpsm-login').on('click', function (e) {
+        e.preventDefault();
+        var login = $('#login-hpsm-input').val();
+        if (!login.length) return;
+        chrome.storage.sync.set({loginHPSM: login});
+        $(this).css({'background-color': 'green'})
+    });
+
+    $('#save-hpsm-password').on('click', function (e) {
+        e.preventDefault();
+        var password = $('#password-hpsm-input').val();
+        if (!password.length) return;
+        chrome.storage.sync.set({passwordHPSM: password});
+        $(this).css({'background-color': 'green'})
+    });
 }
 
 function setAutoRegStatus() {
@@ -76,10 +92,21 @@ function fillFields() {
         }
     });
     chrome.storage.sync.get('password', function (result) {
-        console.log(result.password);
         if (result.password.length) {
             $('#password-input').val(result.password);
             $('#save-password').css({'background-color': 'green'});
+        }
+    });
+    chrome.storage.sync.get('loginHPSM', function (result) {
+        if (result.loginHPSM) {
+            $('#login-hpsm-input').val(result.loginHPSM);
+            $('#save-hpsm-login').css({'background-color': 'green'});
+        }
+    });
+    chrome.storage.sync.get('passwordHPSM', function (result) {
+        if (result.passwordHPSM) {
+            $('#password-hpsm-input').val(result.passwordHPSM);
+            $('#save-hpsm-password').css({'background-color': 'green'});
         }
     });
 }
