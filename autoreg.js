@@ -281,7 +281,7 @@ function registration() {
         var form = getActiveFormByHPSM();
         var resolution = form.find('textarea[name="instance/resolution/resolution"]');
         if (resolution.length)
-            resolution.val('АвтоРегистрация: ' + now());
+            resolution.val('Регистрация: ' + now());
 
         if (toEngineerBtn.length) {
             writeToLog('Нажимаю на кнопку: Передать Инженеру');
