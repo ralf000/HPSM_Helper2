@@ -179,6 +179,39 @@ function getAutoRegStatus(callback) {
     });
 }
 
+/**
+ * Получает количество попыток регистрации
+ * @param callback
+ */
+function getRegistrationAttemptsAmount(callback) {
+    chrome.storage.sync.get('registrationAttempts', function (result) {
+        var registrationAttempts = result.registrationAttempts || 0;
+        return callback(registrationAttempts);
+    });
+}
+
+/**
+ * Получает количество попыток регистрации
+ * @param callback
+ */
+function getRegistrationAttemptsAmount(callback) {
+    chrome.storage.sync.get('registrationAttempts', function (result) {
+        var registrationAttempts = result.registrationAttempts || 0;
+        return callback(registrationAttempts);
+    });
+}
+
+/**
+ * Получает время обновлений списка обращений/инцидентов
+ * @param callback
+ */
+function getUpdateTasksTime(callback) {
+    chrome.storage.sync.get('updateTasksTime', function (result) {
+        var updateTasksTime = result.updateTasksTime;
+        return callback(updateTasksTime);
+    });
+}
+
 function getQueue() {
     var form = getActiveFormByHPSM();
     var queueInput = $(form.find('#X4'));

@@ -44,6 +44,14 @@ function addHandlers() {
         chrome.storage.sync.set({passwordHPSM: password});
         $(this).css({'background-color': 'green'})
     });
+
+    $('#save-time').on('click', function (e) {
+        e.preventDefault();
+        var time = $('#time-input').val();
+        if (!time.length) return;
+        chrome.storage.sync.set({updateTasksTime: time});
+        $(this).css({'background-color': 'green'})
+    });
 }
 
 function setAutoRegStatus() {
@@ -107,6 +115,12 @@ function fillFields() {
         if (result.passwordHPSM) {
             $('#password-hpsm-input').val(result.passwordHPSM);
             $('#save-hpsm-password').css({'background-color': 'green'});
+        }
+    });
+    chrome.storage.sync.get('updateTasksTime', function (result) {
+        if (result.updateTasksTime) {
+            $('#time-input').val(result.updateTasksTime);
+            $('#save-time').css({'background-color': 'green'});
         }
     });
 }

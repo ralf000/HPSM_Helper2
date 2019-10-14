@@ -1,10 +1,12 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
 var taskList = getRecordListByHPSM();
-var waitTime = 1000 * 60 * 10;
+var backgroundDelay = 1000 * 16;
+var waitTime = 1000 * 60 * 10 - backgroundDelay;
 var delay = 500;
 var intValId;
 var taskType = '';
+var maxRegistrationAttempts = 5;
 
 /**
  * отслеживает состояние программы
@@ -15,7 +17,7 @@ function checkStatusProgram() {
             if (registration === 'off') {
                 deleteTopLayer();
                 clean();
-                sendLog(logUrl);
+                //sendLog(logUrl);
                 return clearInterval(intValId);
             }
         });
@@ -54,7 +56,7 @@ function update() {
 
 function wait() {
 
-    writeToLog('Статус: ожидание. До следующей проверки новых обращений/инцидентов: ' + waitTime / 60 / 1000 + ' минут');
+    writeToLog('Новых обращений/инцидентов не найдено. До следующей проверки: ' + (waitTime + backgroundDelay) / 60 / 1000 + ' мин');
 
     addTopLayerOnPage();
 
@@ -128,7 +130,6 @@ function waitWithCorrectEnvironment() {
     chrome.storage.sync.get('initRegistration', function (result) {
         var initRegistration = result.initRegistration;
         if (initRegistration && initRegistration === 'on') {
-            writeToLog('Начинаю поиск и авторегистрацию новых обращений/инцидентов');
             chrome.storage.sync.remove('initRegistration');
             saveSearchEnvironment();
         }
@@ -234,8 +235,6 @@ function setRepresentation(representationName) {
 function registration() {
     if (isTasksList()) return checkNewTask();
 
-    writeToLog('Регистрация обращения/инцидента в процессе');
-
     clearInterval(intValId);
 
     writeToLog('Статус обращения/инцидента: ' + getStatus());
@@ -259,16 +258,20 @@ function registration() {
         var toWorkBtn = w.find('button:contains("В работу")');
         var OKBtn = w.find('button:contains("ОК")');
         var cancelBtn = w.find('button:contains("Отмена")');
+        var updateBtn = w.find('button:contains("Обновить")');
 
         if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
             || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
         ) {
             writeToLog('Выход из регистрации обращения');
 
-            sendEmail(emailUrl, number, title, now());
-
             if (OKBtn.length) {
                 writeToLog('Нажимаю на кнопку: ОК');
+                //шлет email и регистрации обращения
+                sendEmail(emailUrl, number, title, now());
+                //сбрасывает счетчик попыток зарегистрировать обращение
+                chrome.storage.sync.set({registrationAttempts: 0});
+
                 return OKBtn.click();
             }
             if (cancelBtn.length) {
@@ -278,34 +281,46 @@ function registration() {
         }
         writeToLog('Регистрирую обращение/инцидент под номером ' + number);
 
-        var form = getActiveFormByHPSM();
-        var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-        if (resolution.length)
-            resolution.val('Регистрация: ' + now());
+        getRegistrationAttemptsAmount(function (registrationAttempts) {
+            if (registrationAttempts > 1) {
+                writeToLog('Повторная попытка регистрации обращения number: ' + registrationAttempts);
+            }
+            var form = getActiveFormByHPSM();
+            var resolution = form.find('textarea[name="instance/resolution/resolution"]');
+            if (resolution.length) {
+                resolution.val('Регистрация: ' + now());
+            }
+            if (toEngineerBtn.length || toWorkBtn.length) {
+                //если количество попыток регистрации превышено, страница перезагружается
+                if (registrationAttempts >= maxRegistrationAttempts) {
+                    chrome.storage.sync.set({registrationAttempts: 0});
+                    return updateBtn.click();
+                }
+                chrome.storage.sync.set({registrationAttempts: ++registrationAttempts});
 
-        if (toEngineerBtn.length) {
-            writeToLog('Нажимаю на кнопку: Передать Инженеру');
-            return toEngineerBtn.click()
-        }
-        if (toWorkBtn.length) {
-            writeToLog('Нажимаю на кнопку: В работу');
-            return toWorkBtn.click()
-        }
-        if (OKBtn.length) {
-            writeToLog('Нажимаю на кнопку: ОК');
-            return OKBtn.click();
-        }
-        if (cancelBtn.length) {
-            writeToLog('Нажимаю на кнопку: Отмена');
-            return cancelBtn.click();
-        }
-        writeToLog('Ошибка: не найдено кнопок для продолжения авторегистрации')
+                if (toEngineerBtn.length) {
+                    writeToLog('Нажимаю на кнопку: Передать Инженеру');
+                    return toEngineerBtn.click();
+                }
+                if (toWorkBtn.length) {
+                    writeToLog('Нажимаю на кнопку: В работу');
+                    return toWorkBtn.click();
+                }
+            }
+            if (OKBtn.length) {
+                writeToLog('Нажимаю на кнопку: ОК');
+                return OKBtn.click();
+            }
+            if (cancelBtn.length) {
+                writeToLog('Нажимаю на кнопку: Отмена');
+                return cancelBtn.click();
+            }
+            writeToLog('Ошибка: не найдено кнопок для продолжения авторегистрации');
+        })
     });
 }
 
 function getCommandFromBackground() {
-    writeToLog('Получаю команду');
-
     chrome.storage.sync.get('todo', function (result) {
         var todo = result.todo;
         chrome.storage.sync.remove('todo');
@@ -313,7 +328,7 @@ function getCommandFromBackground() {
             return registration();
         }
         if (todo === 'updateTaskList') {
-            return  update();
+            return update();
         }
         checkNewTask();
     });
@@ -322,7 +337,6 @@ function getCommandFromBackground() {
 function onOffRegHandler(registration) {
     init();
     if (registration === 'on') {
-        writeToLog('Статус: авторегистрация');
         if (isContinuePage()) {
             return handleContinuePage();
         }
@@ -353,4 +367,9 @@ function run() {
 }
 
 //запуск
-run();
+getUpdateTasksTime(function (updateTasksTime) {
+    if (updateTasksTime) {
+        waitTime = updateTasksTime * 1000 * 60 - backgroundDelay;
+    }
+    setTimeout(run, delay * 2);
+});
