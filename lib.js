@@ -6,23 +6,17 @@ function handleContinuePage() {
 
     chrome.extension.sendMessage({command: "checkingOnEntryPage", delay: 1000 * 60});
 
-    chrome.storage.sync.get('loginHPSM', function (result) {
-        var loginHPSM = result.loginHPSM;
-        chrome.storage.sync.get('passwordHPSM', function (result) {
-            var passwordHPSM = result.passwordHPSM;
-            if (loginHPSM) {
-                $('#LoginUsername').val(loginHPSM);
-            }
-            if (passwordHPSM) {
-                $('#LoginPassword').val(passwordHPSM);
-            }
-            setTimeout(function () {
-                return $('#btnContinue').length
-                    ? $('#btnContinue')[0].click()
-                    : $('#loginBtn').click();
-            }, 300);
-        });
-    });
+    if (loginHPSM) {
+        $('#LoginUsername').val(loginHPSM);
+    }
+    if (passwordHPSM) {
+        $('#LoginPassword').val(passwordHPSM);
+    }
+    setTimeout(function () {
+        return $('#btnContinue').length
+            ? $('#btnContinue')[0].click()
+            : $('#loginBtn').click();
+    }, 300);
 }
 
 
@@ -130,7 +124,7 @@ function getStatus() {
 function getHPSMTabId(callback) {
     chrome.storage.sync.get('hpsmTab', function (result) {
         var hpsmTab = result.hpsmTab;
-        callback(hpsmTab);
+        return callback(hpsmTab);
     });
 }
 
@@ -144,7 +138,7 @@ function getTopLayer() {
                 z-index: 9999999;\
                 opacity: .8;\
                 background-color: #fff;">\
-                <span style="\
+                    <span style="\
                     margin: auto;\
                     display: flex;\
                     flex-flow: column;\
@@ -160,9 +154,8 @@ function getTopLayer() {
                     min-height: calc(100% - (1.75rem * 2))">\
                         <img src="http://utilites.2hut.ru/loading.gif" style="width: 400px" alt="">\
                         Авторегистрация<br>\
-                        <a href="#" id="sendLogs">Отправить логи на почту</a>\
-                        </span>\
-                    </div>';
+                    </span>\
+                </div>';
 }
 
 function clean() {
@@ -175,7 +168,7 @@ function clean() {
 function getAutoRegStatus(callback) {
     chrome.storage.sync.get('registration', function (result) {
         var registration = result.registration;
-        callback(registration);
+        return callback(registration);
     });
 }
 
@@ -185,18 +178,7 @@ function getAutoRegStatus(callback) {
  */
 function getRegistrationAttemptsAmount(callback) {
     chrome.storage.sync.get('registrationAttempts', function (result) {
-        var registrationAttempts = result.registrationAttempts || 0;
-        return callback(registrationAttempts);
-    });
-}
-
-/**
- * Получает количество попыток регистрации
- * @param callback
- */
-function getRegistrationAttemptsAmount(callback) {
-    chrome.storage.sync.get('registrationAttempts', function (result) {
-        var registrationAttempts = result.registrationAttempts || 0;
+        registrationAttempts = result.registrationAttempts || 0;
         return callback(registrationAttempts);
     });
 }
@@ -208,20 +190,113 @@ function getRegistrationAttemptsAmount(callback) {
 function getUpdateTasksTime(callback) {
     chrome.storage.sync.get('updateTasksTime', function (result) {
         var updateTasksTime = result.updateTasksTime;
+        if (updateTasksTime) {
+            waitTime = updateTasksTime * 1000 * 60 - backgroundDelay;
+        }
         return callback(updateTasksTime);
     });
 }
 
+/**
+ * Получает установленную очередь для поиска обращений/инцидентов
+ */
 function getQueue() {
     var form = getActiveFormByHPSM();
     var queueInput = $(form.find('#X4'));
     return queueInput.length ? queueInput.val() : '';
 }
 
+/**
+ * Получает установленное представление для поиска обращений/инцидентов
+ */
 function getRepresentation() {
     var form = getActiveFormByHPSM();
     var representationInput = $(form.find('#X6'));
     return representationInput.length ? representationInput.val() : '';
+}
+
+function getLoginHPSM(callback) {
+    chrome.storage.sync.get('loginHPSM', function (result) {
+        loginHPSM = result.loginHPSM;
+        return callback(loginHPSM);
+    });
+}
+
+function getPasswordHPSM(callback) {
+    chrome.storage.sync.get('passwordHPSM', function (result) {
+        passwordHPSM = result.passwordHPSM;
+        return callback(passwordHPSM);
+    });
+}
+
+function getAlertEmail(callback) {
+    chrome.storage.sync.get('email', function (result) {
+        alertEmail = result.email;
+        return callback(alertEmail);
+    });
+}
+
+function getAlertEmailPassword(callback) {
+    chrome.storage.sync.get('password', function (result) {
+        alertEmailPassword = result.password;
+        return callback(alertEmailPassword);
+    });
+}
+
+function getInitRegistrationTag(callback) {
+    chrome.storage.sync.get('initRegistration', function (result) {
+        initRegistration = result.initRegistration;
+        return callback(initRegistration);
+    });
+}
+
+function getSavedQueueName(callback) {
+    chrome.storage.sync.get('queueName', function (result) {
+        queueName = result.queueName;
+        return callback(queueName);
+    });
+}
+
+function getSavedRepresentationName(callback) {
+    chrome.storage.sync.get('representationName', function (result) {
+        representationName = result.representationName;
+        return callback(representationName);
+    });
+}
+
+function getTodo(callback) {
+    chrome.storage.sync.get('todo', function (result) {
+        todo = result.todo;
+        return callback(todo);
+    });
+}
+
+/**
+ * Получает конфиг расширения
+ * @param callback
+ */
+function getConfig(callback) {
+    getUpdateTasksTime(function () {
+        getRegistrationAttemptsAmount(function () {
+            getLoginHPSM(function () {
+                getPasswordHPSM(function () {
+                    getAlertEmail(function () {
+                        getAlertEmailPassword(function () {
+                            getInitRegistrationTag(function () {
+                                getSavedQueueName(function () {
+                                    getSavedRepresentationName(function () {
+                                        getTodo(function () {
+                                            setTimeout(callback, delay * 3);
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
 }
 
 function sendEmailViaAjax(url, number, title, date, email, password) {
@@ -249,53 +324,45 @@ function writeToLog(message, url, date) {
 
     console.log(date + ': ' + message);
 
-    chrome.storage.sync.get('password', function (result1) {
-        if (result1.password.length) {
-            var password = result1.password;
-            chrome.storage.sync.get('email', function (result2) {
-                if (result2.email.length) {
-                    var email = result2.email;
-                    $.ajax({
-                        url: url,
-                        type: "POST",
-                        dataType: 'json',
-                        data: {type: 'write', message: message, email: email, password: password, date: date},
-                        success: function (data) {
-                            if (data.status === 'success') {
-                            } else {
-                                console.error(now() + ' ' + data.message)
-                            }
-                        },
-                        error: function (data) {
-                            console.error(data);
-                        }
-                    });
-                } else {
-                    console.info(now() + ' Не введен email для отправки писем');
+    if (alertEmailPassword.length) {
+        if (alertEmail.length) {
+            $.ajax({
+                url: url,
+                type: "POST",
+                dataType: 'json',
+                data: {type: 'write', message: message, email: alertEmail, password: alertEmailPassword, date: date},
+                success: function (data) {
+                    if (data.status === 'success') {
+                    } else {
+                        console.error(now() + ' ' + data.message)
+                    }
+                },
+                error: function (data) {
+                    console.error(data);
                 }
             });
         } else {
-            console.info(now() + ' Не введен пароль для отправки писем');
+            console.info(now() + ' Не введен email для отправки писем');
         }
-    });
+    } else {
+        console.info(now() + ' Не введен пароль для отправки писем');
+    }
 }
 
+/**
+ * Отправляет логи на почту
+ * @param url
+ */
 function sendLog(url) {
-    chrome.storage.sync.get('password', function (result1) {
-        if (result1.password.length) {
-            var password = result1.password;
-            chrome.storage.sync.get('email', function (result2) {
-                if (result2.email.length) {
-                    var email = result2.email;
-                    return sendLogsToEmail(url, password, email)
-                } else {
-                    console.info(now() + ' Не введен email для отправки писем');
-                }
-            });
+    if (alertEmailPassword.length) {
+        if (alertEmail.length) {
+            return sendLogsToEmail(url, alertEmailPassword, alertEmail)
         } else {
-            console.info(now() + ' Не введен пароль для отправки писем');
+            console.info(now() + ' Не введен email для отправки писем');
         }
-    });
+    } else {
+        console.info(now() + ' Не введен пароль для отправки писем');
+    }
 }
 
 function sendLogsToEmail(url, password, email, onSuccessCallback) {
@@ -319,22 +386,16 @@ function sendLogsToEmail(url, password, email, onSuccessCallback) {
 }
 
 function sendEmail(url, number, title, date) {
-    chrome.storage.sync.get('password', function (result1) {
-        if (result1.password.length) {
-            var password = result1.password;
-            chrome.storage.sync.get('email', function (result2) {
-                if (result2.email.length) {
-                    var email = result2.email;
-                    console.log(now() + ' Отправка письма об авторегистрации обращения/инцидента ' + number + ' на адрес ' + email);
-                    return sendEmailViaAjax(url, number, title, date, email, password)
-                } else {
-                    console.info(now() + ' Не введен email для отправки писем');
-                }
-            });
+    if (alertEmailPassword.length) {
+        if (alertEmail.length) {
+            console.log(now() + ' Отправка письма об авторегистрации обращения/инцидента ' + number + ' на адрес ' + alertEmail);
+            return sendEmailViaAjax(url, number, title, date, alertEmail, alertEmailPassword)
         } else {
-            console.info(now() + ' Не введен пароль для отправки писем');
+            console.info(now() + ' Не введен email для отправки писем');
         }
-    });
+    } else {
+        console.info(now() + ' Не введен пароль для отправки писем');
+    }
 }
 
 function now() {

@@ -6,7 +6,24 @@ var waitTime = 1000 * 60 * 10 - backgroundDelay;
 var delay = 500;
 var intValId;
 var taskType = '';
+var registrationAttempts = 0;
 var maxRegistrationAttempts = 5;
+//логин от HPSM
+var loginHPSM;
+//пароль от HPSM
+var passwordHPSM;
+//email для оповещений
+var alertEmail;
+//пароль для оповещений
+var alertEmailPassword;
+//метка о начале регистрации
+var initRegistration;
+//установленная очередь для поиска обращений/инцидентов
+var queueName;
+//установленное представление для поиска обращений/инцидентов
+var representationName;
+//команда от бекграунда
+var todo;
 
 /**
  * отслеживает состояние программы
@@ -127,14 +144,11 @@ function entranceToTask() {
  * которые были выбраны при старте
  */
 function waitWithCorrectEnvironment() {
-    chrome.storage.sync.get('initRegistration', function (result) {
-        var initRegistration = result.initRegistration;
-        if (initRegistration && initRegistration === 'on') {
-            chrome.storage.sync.remove('initRegistration');
-            saveSearchEnvironment();
-        }
-        setSearchEnvironment(initRegistration);
-    });
+    if (initRegistration && initRegistration === 'on') {
+        chrome.storage.sync.remove('initRegistration');
+        saveSearchEnvironment();
+    }
+    setSearchEnvironment();
 }
 
 /**
@@ -152,50 +166,35 @@ function saveSearchEnvironment() {
 
 /**
  * Устанавливает очередь и представление, которые были выбраны при старте (если они изменились)
- * @param initRegistration
  */
-function setSearchEnvironment(initRegistration) {
-    chrome.storage.sync.get('queueName', function (result) {
-        var queueName = result.queueName;
-        chrome.storage.sync.get('representationName', function (result) {
-            var representationName = result.representationName;
+function setSearchEnvironment() {
+    var currentQueue = getQueue();
+    var currentRepresentation = getRepresentation();
 
-            var currentQueue = getQueue();
-            var currentRepresentation = getRepresentation();
-
-            if (!initRegistration) {
-                if (currentQueue !== queueName) {
-                    writeToLog('Устанавливаю очередь: ' + queueName);
-                    chrome.extension.sendMessage({command: "setQueue"});
-                    return setQueue(queueName);
-                }
-                if (currentRepresentation !== representationName) {
-                    writeToLog('Устанавливаю представление: ' + representationName);
-                    chrome.extension.sendMessage({command: "setRepresentation"});
-                    return setRepresentation(representationName);
-                }
-            }
-            return wait();
-        });
-    });
+    if (!initRegistration) {
+        if (currentQueue !== queueName) {
+            writeToLog('Устанавливаю очередь: ' + queueName);
+            chrome.extension.sendMessage({command: "setQueue"});
+            return setQueue(queueName);
+        }
+        if (currentRepresentation !== representationName) {
+            writeToLog('Устанавливаю представление: ' + representationName);
+            chrome.extension.sendMessage({command: "setRepresentation"});
+            return setRepresentation(representationName);
+        }
+    }
+    return wait();
 }
 
 function isCorrectSearchEnvironment(callback) {
     var isCorrect = true;
-    chrome.storage.sync.get('queueName', function (result) {
-        var queueName = result.queueName;
-        chrome.storage.sync.get('representationName', function (result) {
-            var representationName = result.representationName;
+    var currentQueue = getQueue();
+    var currentRepresentation = getRepresentation();
 
-            var currentQueue = getQueue();
-            var currentRepresentation = getRepresentation();
-
-            isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
-            if (isCorrect) {
-                callback();
-            }
-        });
-    });
+    isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
+    if (isCorrect) {
+        callback();
+    }
 }
 
 /**
@@ -281,57 +280,52 @@ function registration() {
         }
         writeToLog('Регистрирую обращение/инцидент под номером ' + number);
 
-        getRegistrationAttemptsAmount(function (registrationAttempts) {
-            if (registrationAttempts > 1) {
-                writeToLog('Повторная попытка регистрации обращения number: ' + registrationAttempts);
+        if (registrationAttempts > 1) {
+            writeToLog('Повторная попытка регистрации обращения number: ' + registrationAttempts);
+        }
+        var form = getActiveFormByHPSM();
+        var resolution = form.find('textarea[name="instance/resolution/resolution"]');
+        if (resolution.length) {
+            resolution.val('Регистрация: ' + now());
+        }
+        if (toEngineerBtn.length || toWorkBtn.length) {
+            //если количество попыток регистрации превышено, страница перезагружается
+            if (registrationAttempts >= maxRegistrationAttempts) {
+                chrome.storage.sync.set({registrationAttempts: 0});
+                return updateBtn.click();
             }
-            var form = getActiveFormByHPSM();
-            var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-            if (resolution.length) {
-                resolution.val('Регистрация: ' + now());
-            }
-            if (toEngineerBtn.length || toWorkBtn.length) {
-                //если количество попыток регистрации превышено, страница перезагружается
-                if (registrationAttempts >= maxRegistrationAttempts) {
-                    chrome.storage.sync.set({registrationAttempts: 0});
-                    return updateBtn.click();
-                }
-                chrome.storage.sync.set({registrationAttempts: ++registrationAttempts});
+            chrome.storage.sync.set({registrationAttempts: registrationAttempts + 1});
 
-                if (toEngineerBtn.length) {
-                    writeToLog('Нажимаю на кнопку: Передать Инженеру');
-                    return toEngineerBtn.click();
-                }
-                if (toWorkBtn.length) {
-                    writeToLog('Нажимаю на кнопку: В работу');
-                    return toWorkBtn.click();
-                }
+            if (toEngineerBtn.length) {
+                writeToLog('Нажимаю на кнопку: Передать Инженеру');
+                return toEngineerBtn.click();
             }
-            if (OKBtn.length) {
-                writeToLog('Нажимаю на кнопку: ОК');
-                return OKBtn.click();
+            if (toWorkBtn.length) {
+                writeToLog('Нажимаю на кнопку: В работу');
+                return toWorkBtn.click();
             }
-            if (cancelBtn.length) {
-                writeToLog('Нажимаю на кнопку: Отмена');
-                return cancelBtn.click();
-            }
-            writeToLog('Ошибка: не найдено кнопок для продолжения авторегистрации');
-        })
+        }
+        if (OKBtn.length) {
+            writeToLog('Нажимаю на кнопку: ОК');
+            return OKBtn.click();
+        }
+        if (cancelBtn.length) {
+            writeToLog('Нажимаю на кнопку: Отмена');
+            return cancelBtn.click();
+        }
+        writeToLog('Ошибка: не найдено кнопок для продолжения авторегистрации');
     });
 }
 
 function getCommandFromBackground() {
-    chrome.storage.sync.get('todo', function (result) {
-        var todo = result.todo;
-        chrome.storage.sync.remove('todo');
-        if (todo === 'regInProcess') {
-            return registration();
-        }
-        if (todo === 'updateTaskList') {
-            return update();
-        }
-        checkNewTask();
-    });
+    chrome.storage.sync.remove('todo');
+    if (todo === 'regInProcess') {
+        return registration();
+    }
+    if (todo === 'updateTaskList') {
+        return update();
+    }
+    checkNewTask();
 }
 
 function onOffRegHandler(registration) {
@@ -349,17 +343,9 @@ function checkTaskType() {
     taskType = frame.find('#X1 span').text();
 }
 
-function initHandlers() {
-    $(document).on('click', '#sendLogs', function (e) {
-        e.preventDefault();
-        sendLog(logUrl);
-    });
-}
-
 function init() {
     checkStatusProgram();
     checkTaskType();
-    initHandlers();
 }
 
 function run() {
@@ -367,9 +353,4 @@ function run() {
 }
 
 //запуск
-getUpdateTasksTime(function (updateTasksTime) {
-    if (updateTasksTime) {
-        waitTime = updateTasksTime * 1000 * 60 - backgroundDelay;
-    }
-    setTimeout(run, delay * 2);
-});
+getConfig(run);

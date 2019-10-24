@@ -3,22 +3,14 @@ function commandHandler(command, delay) {
     delay = delay || 1000 * 15;
 
     setTimeout(function () {
-
-        if (command === "newTask")
+        if (command === "newTask") {
             chrome.storage.sync.set({todo: 'regInProcess'});
-        else if (command === "updateTaskList")
+        } else if (command === "updateTaskList") {
             chrome.storage.sync.set({todo: 'updateTaskList'});
-        else if (command === "deleteTopLayer") {
-            getHPSMTabId(function (hpsmTab) {
-                
-            });
-        }
-
-
+        };
         getHPSMTabId(function (hpsmTab) {
             chrome.tabs.executeScript(hpsmTab, {file: 'autoreg.js'});
-        })
-
+        });
     }, delay);
 }
 
