@@ -262,12 +262,12 @@ function registration() {
         if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
             || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
         ) {
+            //шлет email и регистрации обращения
+            sendEmail(emailUrl, number, title, now());
             writeToLog('Выход из регистрации обращения');
 
             if (OKBtn.length) {
                 writeToLog('Нажимаю на кнопку: ОК');
-                //шлет email и регистрации обращения
-                sendEmail(emailUrl, number, title, now());
                 //сбрасывает счетчик попыток зарегистрировать обращение
                 chrome.storage.sync.set({registrationAttempts: 0});
 
