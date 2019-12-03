@@ -1,17 +1,20 @@
 {
   "name": "HPSM Helper",
   "description": "Упрощает работу в системой HPSM",
-  "version": "6.6",
+  "version": "7",
   "content_scripts": [
     {
       "matches": [
+        "https://212.11.152.7/*",
+        "https://sm.eaist.mos.ru/*",
+        "https://sm.tender.mos.ru/*",
         "https://sm.mos.ru/*/*",
         "https://utilites.2hut.ru/*"
       ],
       "js": [
+        "jquery.min.js",
         "data.json",
-        "lib.js",
-        "jquery.min.js"
+        "lib.js"
       ],
       "css": [],
       "all_frames": true
@@ -19,6 +22,9 @@
   ],
   "permissions": [
     "storage",
+    "https://212.11.152.7/*",
+    "https://sm.eaist.mos.ru/*",
+    "https://sm.tender.mos.ru/*",
     "https://sm.mos.ru/*/*",
     "https://utilites.2hut.ru/*"
   ],
@@ -30,8 +36,8 @@
   "manifest_version": 2,
   "background": {
     "scripts": [
-      "background.js",
       "jquery.min.js",
+      "background.js",
       "data.json",
       "lib.js"
     ]

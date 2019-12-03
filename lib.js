@@ -1,17 +1,16 @@
 var emailUrl = 'https://utilites.2hut.ru/hpsm_helper/send-email.php';
 var logUrl = 'https://utilites.2hut.ru/hpsm_helper/log.php';
 
+var statusNew = 'Новое';
+var statusOld = 'Зарегистрированное';
+
 function handleContinuePage() {
     writeToLog('Сессия истекла. Возвращаюсь на страницу со списком инцидентов/обращений');
 
     chrome.extension.sendMessage({command: "checkingOnEntryPage", delay: 1000 * 60});
 
-    if (loginHPSM) {
-        $('#LoginUsername').val(loginHPSM);
-    }
-    if (passwordHPSM) {
-        $('#LoginPassword').val(passwordHPSM);
-    }
+    handleLoginPage();
+
     setTimeout(function () {
         return $('#btnContinue').length
             ? $('#btnContinue')[0].click()
@@ -98,7 +97,8 @@ function getRecordListByHPSM() {
 }
 
 function isTasksList() {
-    return getRecordListByHPSM();
+    var recordsList = getRecordListByHPSM();
+    return recordsList && getRecordListByHPSM().length !== 0;
 }
 
 /**
@@ -114,6 +114,9 @@ function isContinuePage() {
  * @returns string|null Task status
  */
 function getStatus() {
+    if (isNewHPSM()) {
+        return w.find('button:contains("Взять в работу")').length ? statusNew : statusOld;
+    }
     var form = getActiveFormByHPSM();
     if (form.find('input[name="instance/hpc.status"]').length === 0)
         return null;
@@ -158,6 +161,12 @@ function getTopLayer() {
                 </div>';
 }
 
+function isNewHPSM() {
+    return location.href.indexOf('https://sm.eaist.mos.ru') !== -1
+        || location.href.indexOf('https://sm.tender.mos.ru') !== -1
+        || location.href.indexOf('212.11.152.7') !== -1;
+}
+
 function clean() {
     chrome.storage.sync.remove('registration');
     chrome.storage.sync.remove('todo');
@@ -169,17 +178,6 @@ function getAutoRegStatus(callback) {
     chrome.storage.sync.get('registration', function (result) {
         var registration = result.registration;
         return callback(registration);
-    });
-}
-
-/**
- * Получает количество попыток регистрации
- * @param callback
- */
-function getRegistrationAttemptsAmount(callback) {
-    chrome.storage.sync.get('registrationAttempts', function (result) {
-        registrationAttempts = result.registrationAttempts || 0;
-        return callback(registrationAttempts);
     });
 }
 
@@ -202,7 +200,7 @@ function getUpdateTasksTime(callback) {
  */
 function getQueue() {
     var form = getActiveFormByHPSM();
-    var queueInput = $(form.find('#X4'));
+    var queueInput = isNewHPSM() ? $(form.find('#X5')) : $(form.find('#X4'));
     return queueInput.length ? queueInput.val() : '';
 }
 
@@ -211,7 +209,7 @@ function getQueue() {
  */
 function getRepresentation() {
     var form = getActiveFormByHPSM();
-    var representationInput = $(form.find('#X6'));
+    var representationInput = isNewHPSM() ? $(form.find('#X7')) : $(form.find('#X6'));
     return representationInput.length ? representationInput.val() : '';
 }
 
@@ -226,6 +224,20 @@ function getPasswordHPSM(callback) {
     chrome.storage.sync.get('passwordHPSM', function (result) {
         passwordHPSM = result.passwordHPSM;
         return callback(passwordHPSM);
+    });
+}
+
+function getLoginNewHPSM(callback) {
+    chrome.storage.sync.get('loginNewHPSM', function (result) {
+        loginNewHPSM = result.loginNewHPSM;
+        return callback(loginNewHPSM);
+    });
+}
+
+function getPasswordNewHPSM(callback) {
+    chrome.storage.sync.get('passwordNewHPSM', function (result) {
+        passwordNewHPSM = result.passwordNewHPSM;
+        return callback(passwordNewHPSM);
     });
 }
 
@@ -277,23 +289,25 @@ function getTodo(callback) {
  */
 function getConfig(callback) {
     getUpdateTasksTime(function () {
-        getRegistrationAttemptsAmount(function () {
-            getLoginHPSM(function () {
-                getPasswordHPSM(function () {
-                    getAlertEmail(function () {
-                        getAlertEmailPassword(function () {
-                            getInitRegistrationTag(function () {
-                                getSavedQueueName(function () {
-                                    getSavedRepresentationName(function () {
-                                        getTodo(function () {
-                                            setTimeout(callback, delay * 3);
+        getLoginHPSM(function () {
+            getPasswordHPSM(function () {
+                getLoginNewHPSM(function () {
+                    getPasswordNewHPSM(function () {
+                        getAlertEmail(function () {
+                            getAlertEmailPassword(function () {
+                                getInitRegistrationTag(function () {
+                                    getSavedQueueName(function () {
+                                        getSavedRepresentationName(function () {
+                                            getTodo(function () {
+                                                setTimeout(callback, delay * 3);
+                                            });
                                         });
                                     });
                                 });
                             });
                         });
-                    });
-                });
+                    })
+                })
             });
         });
     });

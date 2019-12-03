@@ -7,10 +7,15 @@ function addHandlers() {
             chrome.tabs.executeScript(null, {file: 'autoreg.js'});
             setTimeout(function () {
                 window.close();
-            }, 1000);
+            }, 500);
         } else {
             chrome.storage.sync.set({registration: 'off'});
         }
+    });
+
+    $('a[data-target]').click(function (e) {
+        e.preventDefault();
+        $($(this).data('target')).slideToggle();
     });
 
     $('#save-email').on('click', function (e) {
@@ -42,6 +47,22 @@ function addHandlers() {
         var password = $('#password-hpsm-input').val();
         if (!password.length) return;
         chrome.storage.sync.set({passwordHPSM: password});
+        $(this).css({'background-color': 'green'})
+    });
+
+    $('#save-hpsm-new-login').on('click', function (e) {
+        e.preventDefault();
+        var login = $('#login-hpsm-new-input').val();
+        if (!login.length) return;
+        chrome.storage.sync.set({loginNewHPSM: login});
+        $(this).css({'background-color': 'green'})
+    });
+
+    $('#save-hpsm-new-password').on('click', function (e) {
+        e.preventDefault();
+        var password = $('#password-hpsm-new-input').val();
+        if (!password.length) return;
+        chrome.storage.sync.set({passwordNewHPSM: password});
         $(this).css({'background-color': 'green'})
     });
 
@@ -84,8 +105,14 @@ function appendBtns(data, status) {
 
 function saveCurrentTab() {
     chrome.tabs.getSelected(null, function (tab) {
-        if (tab.url.indexOf('sm.mos') === -1)
+        if (tab.url
+            && (tab.url.indexOf('https://sm.mos.ru') === -1
+                && tab.url.indexOf('https://sm.eaist.mos.ru') === -1
+                && tab.url.indexOf('https://sm.tender.mos.ru') === -1
+                && tab.url.indexOf('212.11.152.7') === -1)
+        ) {
             return false;
+        }
         tab = tab.id;
         chrome.storage.sync.set({hpsmTab: tab});
     });
@@ -94,13 +121,13 @@ function saveCurrentTab() {
 
 function fillFields() {
     chrome.storage.sync.get('email', function (result) {
-        if (result.email.length) {
+        if (result.email) {
             $('#email-input').val(result.email);
             $('#save-email').css({'background-color': 'green'});
         }
     });
     chrome.storage.sync.get('password', function (result) {
-        if (result.password.length) {
+        if (result.password) {
             $('#password-input').val(result.password);
             $('#save-password').css({'background-color': 'green'});
         }
@@ -115,6 +142,18 @@ function fillFields() {
         if (result.passwordHPSM) {
             $('#password-hpsm-input').val(result.passwordHPSM);
             $('#save-hpsm-password').css({'background-color': 'green'});
+        }
+    });
+    chrome.storage.sync.get('passwordNewHPSM', function (result) {
+        if (result.passwordNewHPSM) {
+            $('#password-hpsm-new-input').val(result.passwordNewHPSM);
+            $('#save-hpsm-new-password').css({'background-color': 'green'});
+        }
+    });
+    chrome.storage.sync.get('loginNewHPSM', function (result) {
+        if (result.loginNewHPSM) {
+            $('#login-hpsm-new-input').val(result.loginNewHPSM);
+            $('#save-hpsm-new-login').css({'background-color': 'green'});
         }
     });
     chrome.storage.sync.get('updateTasksTime', function (result) {

@@ -250,3 +250,19 @@ label.onoffswitch-label {
     background-color: #bdbbbb;
     font-size: 16px;
 }
+
+.toggle-block {
+    display: none;
+}
+
+[data-target] {
+    display: block;
+    text-align: right;
+    padding: 3px 7px;
+    color: #333;
+    text-decoration: none;
+}
+
+[data-target]:hover {
+    text-decoration: underline;
+}

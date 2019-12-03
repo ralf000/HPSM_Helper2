@@ -1,17 +1,18 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
-var taskList = getRecordListByHPSM();
 var backgroundDelay = 1000 * 16;
 var waitTime = 1000 * 60 * 10 - backgroundDelay;
 var delay = 500;
 var intValId;
 var taskType = '';
-var registrationAttempts = 0;
-var maxRegistrationAttempts = 5;
 //логин от HPSM
 var loginHPSM;
 //пароль от HPSM
 var passwordHPSM;
+//логин от новой HPSM
+var loginNewHPSM;
+//пароль от новой HPSM
+var passwordNewHPSM;
 //email для оповещений
 var alertEmail;
 //пароль для оповещений
@@ -35,6 +36,7 @@ function checkStatusProgram() {
                 deleteTopLayer();
                 clean();
                 //sendLog(logUrl);
+                chrome.extension.sendMessage({command: "stop", delay: 1000});
                 return clearInterval(intValId);
             }
         });
@@ -81,6 +83,7 @@ function wait() {
 }
 
 function isNewTask() {
+    var taskList = getRecordListByHPSM();
     if (taskType === 'Обращение') {
         //Обращение
         return (taskList.length && taskList.find('[role=gridcell]:contains("Новое")').length !== 0)
@@ -111,6 +114,7 @@ function entranceToTask() {
 
         writeToLog('Перехожу к регистрации');
 
+        var taskList = getRecordListByHPSM();
         if (taskType === 'Обращение') {
             if ((taskList.length && taskList.find('div:contains("Новое")') !== 0)) {
                 if (taskList.length && taskList
@@ -187,11 +191,10 @@ function setSearchEnvironment() {
 }
 
 function isCorrectSearchEnvironment(callback) {
-    var isCorrect = true;
     var currentQueue = getQueue();
     var currentRepresentation = getRepresentation();
 
-    isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
+    var isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
     if (isCorrect) {
         callback();
     }
@@ -244,7 +247,10 @@ function registration() {
 
         if (commonMsg.text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
             chrome.extension.sendMessage({command: "moveToTaskList"});
-            return w.find('button:contains("Отмена")').click();
+            var cancelBtn = w.find('button:contains("Отмена")');
+            var returnBtn = w.find('button:contains("Отмена")');
+            var OKBtn = w.find('button:contains("Возврат")');
+            return cancelBtn.length ? cancelBtn.click() : OKBtn.length ? OKBtn.click() : returnBtn.click();
         }
     }
 
@@ -256,57 +262,44 @@ function registration() {
         var toEngineerBtn = w.find('button:contains("Передать Инженеру")');
         var toWorkBtn = w.find('button:contains("В работу")');
         var OKBtn = w.find('button:contains("ОК")');
+
+        if (isNewHPSM()) {
+            toWorkBtn = w.find('button:contains("Взять в работу")');
+            OKBtn = w.find('button:contains("Возврат")');
+        }
         var cancelBtn = w.find('button:contains("Отмена")');
         var updateBtn = w.find('button:contains("Обновить")');
 
-        if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
-            || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
+        if ((getStatus() !== statusNew && getStatus() !== 'Направлен в группу')
+            || (!toEngineerBtn.length && !toWorkBtn.length)
         ) {
-            //шлет email и регистрации обращения
+            //шлет email о регистрации обращения
             sendEmail(emailUrl, number, title, now());
             writeToLog('Выход из регистрации обращения');
 
             if (OKBtn.length) {
-                writeToLog('Нажимаю на кнопку: ОК');
-                //сбрасывает счетчик попыток зарегистрировать обращение
-                chrome.storage.sync.set({registrationAttempts: 0});
-
+                writeToLog('Нажимаю на кнопку: ОК/Возврат');
                 return OKBtn.click();
             }
             if (cancelBtn.length) {
                 writeToLog('Нажимаю на кнопку: Отмена');
                 return cancelBtn.click();
             }
+            return writeToLog('Ошибка: не найдено кнопок для выхода из зарегистрированного обращения/инцидента');
         }
+
         writeToLog('Регистрирую обращение/инцидент под номером ' + number);
 
-        if (registrationAttempts > 1) {
-            writeToLog('Повторная попытка регистрации обращения number: ' + registrationAttempts);
+        if (toEngineerBtn.length) {
+            writeToLog('Нажимаю на кнопку: Передать Инженеру');
+            return toEngineerBtn.click();
         }
-        var form = getActiveFormByHPSM();
-        var resolution = form.find('textarea[name="instance/resolution/resolution"]');
-        if (resolution.length) {
-            resolution.val('Регистрация: ' + now());
-        }
-        if (toEngineerBtn.length || toWorkBtn.length) {
-            //если количество попыток регистрации превышено, страница перезагружается
-            if (registrationAttempts >= maxRegistrationAttempts) {
-                chrome.storage.sync.set({registrationAttempts: 0});
-                return updateBtn.click();
-            }
-            chrome.storage.sync.set({registrationAttempts: registrationAttempts + 1});
-
-            if (toEngineerBtn.length) {
-                writeToLog('Нажимаю на кнопку: Передать Инженеру');
-                return toEngineerBtn.click();
-            }
-            if (toWorkBtn.length) {
-                writeToLog('Нажимаю на кнопку: В работу');
-                return toWorkBtn.click();
-            }
+        if (toWorkBtn.length) {
+            writeToLog('Нажимаю на кнопку: В работу/Взять в работу');
+            return toWorkBtn.click();
         }
         if (OKBtn.length) {
-            writeToLog('Нажимаю на кнопку: ОК');
+            writeToLog('Нажимаю на кнопку: ОК/Возврат');
             return OKBtn.click();
         }
         if (cancelBtn.length) {
@@ -335,6 +328,31 @@ function onOffRegHandler(registration) {
             return handleContinuePage();
         }
         getCommandFromBackground();
+    }
+}
+
+function handleLoginPage() {
+    var loginField = $('#LoginUsername');
+    var passwordField = $('#LoginPassword');
+    if (isNewHPSM()) {
+        if (loginNewHPSM) {
+            loginField.val(loginNewHPSM);
+        }
+        if (passwordNewHPSM) {
+            passwordField.val(passwordNewHPSM);
+        }
+    } else {
+        if (loginHPSM) {
+            loginField.val(loginHPSM);
+        }
+        if (passwordHPSM) {
+            passwordField.val(passwordHPSM);
+        }
+    }
+    var selectLanguage = $('#selectedLanguage');
+    if (selectLanguage.length && selectLanguage.val() === 'English') {
+        selectLanguage.val('Russian');
+        selectLanguage.click();
     }
 }
 
