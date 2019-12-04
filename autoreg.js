@@ -61,12 +61,11 @@ function addTopLayerOnPage() {
 function update() {
     clearInterval(intValId);
 
-    chrome.extension.sendMessage({command: "checkForNewTasks"}, function () {
+    chrome.extension.sendMessage({command: "checkForNewTasks", delay: 1000 * 5}, function () {
         var updateBtn = w.find('button:contains("Обновить")');
         if (updateBtn.length) {
             writeToLog('Обновляю список обращений/инцидентов');
             updateBtn.click();
-            //location.reload();
         } else {
             w.find('button:contains("ОК")').click()
         }
