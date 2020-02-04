@@ -243,14 +243,6 @@ function registration() {
     var commonMsg = $('#commonMsg');
     if (commonMsg.length) {
         writeToLog(commonMsg.text());
-
-        if (commonMsg.text().indexOf('Обновляемая запись с момента считывания была изменена') !== -1) {
-            chrome.extension.sendMessage({command: "moveToTaskList"});
-            var cancelBtn = w.find('button:contains("Отмена")');
-            var returnBtn = w.find('button:contains("Отмена")');
-            var OKBtn = w.find('button:contains("Возврат")');
-            return cancelBtn.length ? cancelBtn.click() : OKBtn.length ? OKBtn.click() : returnBtn.click();
-        }
     }
 
     chrome.extension.sendMessage({command: "newTask"}, function () {
