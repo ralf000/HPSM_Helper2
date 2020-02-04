@@ -106,15 +106,19 @@ function appendBtns(data, status) {
 function saveCurrentTab() {
     chrome.tabs.getSelected(null, function (tab) {
         if (tab.url
-            && (tab.url.indexOf('https://sm.mos.ru') === -1
-                && tab.url.indexOf('https://sm.eaist.mos.ru') === -1
-                && tab.url.indexOf('https://sm.tender.mos.ru') === -1
+            && (tab.url.indexOf('sm.mos') === -1
+                && tab.url.indexOf('sm.eaist.mos') === -1
+                && tab.url.indexOf('sm.tender.mos') === -1
                 && tab.url.indexOf('212.11.152.7') === -1)
         ) {
             return false;
         }
-        tab = tab.id;
-        chrome.storage.sync.set({hpsmTab: tab});
+        chrome.storage.sync.get('registration', function (result) {
+            var registration = result.registration;
+            if (registration !== 'on') {
+                chrome.storage.sync.set({hpsmTab: tab.id});
+            }
+        });
     });
 }
 
