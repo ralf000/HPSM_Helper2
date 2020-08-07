@@ -338,8 +338,8 @@ function writeToLog(message, url, date) {
 
     console.log(date + ': ' + message);
 
-    if (alertEmailPassword.length) {
-        if (alertEmail.length) {
+    if (alertEmailPassword) {
+        if (alertEmail) {
             $.ajax({
                 url: url,
                 type: "POST",
@@ -368,8 +368,8 @@ function writeToLog(message, url, date) {
  * @param url
  */
 function sendLog(url) {
-    if (alertEmailPassword.length) {
-        if (alertEmail.length) {
+    if (alertEmailPassword) {
+        if (alertEmail) {
             return sendLogsToEmail(url, alertEmailPassword, alertEmail)
         } else {
             console.info(now() + ' Не введен email для отправки писем');
@@ -400,8 +400,8 @@ function sendLogsToEmail(url, password, email, onSuccessCallback) {
 }
 
 function sendEmail(url, number, title, date) {
-    if (alertEmailPassword.length) {
-        if (alertEmail.length) {
+    if (alertEmailPassword) {
+        if (alertEmail) {
             console.log(now() + ' Отправка письма об авторегистрации обращения/инцидента ' + number + ' на адрес ' + alertEmail);
             return sendEmailViaAjax(url, number, title, date, alertEmail, alertEmailPassword)
         } else {
