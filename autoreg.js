@@ -25,6 +25,10 @@ var queueName;
 var representationName;
 //команда от бекграунда
 var todo;
+//обращения/инциденты вместе с попытками их сохранить {IM235690: 3, IM235862: 5}
+var savingAttempts = {};
+//макс. попыток сохранить обращение/инцидент
+var maxSavingAttempts = 3;
 
 /**
  * отслеживает состояние программы
@@ -132,8 +136,12 @@ function entranceToTask() {
         } else {
             if (taskList.find('div:contains("Направлен в группу")') !== 0) {
                 return taskList
-                    .find('div:contains("Направлен в группу")')
-                    .closest('table.x-grid3-row-table')
+                    .find('table.x-grid3-row-table')
+                    .filter(function (i, el) {//фильтруем талоны с превышенным количеством попыток их сохранить
+                        let number = $(el).find('[id^="ext-gen-list"]').text().trim();
+                        if (!$(el).find('div:contains("Направлен в группу")').length) return false;
+                        return !savingAttempts[number] || savingAttempts[number] < maxSavingAttempts;
+                    })
                     .find('a')[0]
                     .click();
             }
@@ -259,7 +267,6 @@ function registration() {
             OKBtn = w.find('button:contains("Возврат")');
         }
         var cancelBtn = w.find('button:contains("Отмена")');
-        var updateBtn = w.find('button:contains("Обновить")');
 
         if ((getStatus() !== statusNew && getStatus() !== 'Направлен в группу')
             || (!toEngineerBtn.length && !toWorkBtn.length)
@@ -282,12 +289,30 @@ function registration() {
         writeToLog('Регистрирую обращение/инцидент под номером ' + number);
 
         if (toEngineerBtn.length) {
-            writeToLog('Нажимаю на кнопку: Передать Инженеру');
-            return toEngineerBtn.click();
+            return setSavingAttempts(
+                number,
+                () => {
+                    writeToLog('Нажимаю на кнопку: Передать Инженеру');
+                    toEngineerBtn.click()
+                },
+                () => {
+                    writeToLog(`Превышено количество попыток сохранения талона ${number}. Нажимаю на кнопку: Отмена`);
+                    cancelBtn.click()
+                }
+            );
         }
         if (toWorkBtn.length) {
-            writeToLog('Нажимаю на кнопку: В работу/Взять в работу');
-            return toWorkBtn.click();
+            return setSavingAttempts(
+                number,
+                () => {
+                    writeToLog('Нажимаю на кнопку: В работу/Взять в работу');
+                    toWorkBtn.click()
+                },
+                () => {
+                    writeToLog(`Превышено количество попыток сохранения талона ${number}. Нажимаю на кнопку: Отмена`);
+                    cancelBtn.click()
+                }
+            );
         }
         if (OKBtn.length) {
             writeToLog('Нажимаю на кнопку: ОК/Возврат');

@@ -172,6 +172,7 @@ function clean() {
     chrome.storage.sync.remove('todo');
     chrome.storage.sync.remove('hpsmTab');
     chrome.storage.sync.remove('handlingContinuePage');
+    chrome.storage.sync.remove('savingAttempts');
 }
 
 function getAutoRegStatus(callback) {
@@ -179,6 +180,20 @@ function getAutoRegStatus(callback) {
         var registration = result.registration;
         return callback(registration);
     });
+}
+
+function setSavingAttempts(number, successCallback, errorCallback) {
+    let callback = successCallback;
+    if (!savingAttempts[number]) {
+        savingAttempts[number] = 1;
+    } else if (savingAttempts[number] < maxSavingAttempts) {
+        savingAttempts[number] += 1;
+    } else {
+        savingAttempts[number] += 1;
+        callback = errorCallback;
+    }
+    chrome.storage.sync.set({savingAttempts: savingAttempts});
+    callback();
 }
 
 /**
@@ -283,6 +298,15 @@ function getTodo(callback) {
     });
 }
 
+function getSavingAttempts(callback) {
+    chrome.storage.sync.get('savingAttempts', function (result) {
+        if (result.savingAttempts) {
+            savingAttempts = result.savingAttempts;
+        }
+        return callback(savingAttempts);
+    });
+}
+
 /**
  * Получает конфиг расширения
  * @param callback
@@ -299,7 +323,9 @@ function getConfig(callback) {
                                     getSavedQueueName(function () {
                                         getSavedRepresentationName(function () {
                                             getTodo(function () {
-                                                setTimeout(callback, delay * 3);
+                                                getSavingAttempts(function () {
+                                                    setTimeout(callback, delay * 3);
+                                                });
                                             });
                                         });
                                     });
@@ -359,7 +385,7 @@ function writeToLog(message, url, date) {
             console.info(now() + ' Не введен email для отправки писем');
         }
     } else {
-        console.info(now() + ' Не введен пароль для отправки писем');
+        //console.info(now() + ' Не введен пароль для отправки писем');
     }
 }
 
@@ -375,7 +401,7 @@ function sendLog(url) {
             console.info(now() + ' Не введен email для отправки писем');
         }
     } else {
-        console.info(now() + ' Не введен пароль для отправки писем');
+        //console.info(now() + ' Не введен пароль для отправки писем');
     }
 }
 
@@ -408,7 +434,7 @@ function sendEmail(url, number, title, date) {
             console.info(now() + ' Не введен email для отправки писем');
         }
     } else {
-        console.info(now() + ' Не введен пароль для отправки писем');
+        //console.info(now() + ' Не введен пароль для отправки писем');
     }
 }
 

@@ -29,7 +29,6 @@ function addHandlers() {
     $('#save-password').on('click', function (e) {
         e.preventDefault();
         var password = $('#password-input').val();
-        if (!password.length) return;
         chrome.storage.sync.set({password: password});
         $(this).css({'background-color': 'green'})
     });
