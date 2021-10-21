@@ -296,6 +296,11 @@ function registration() {
             }
             chrome.storage.sync.set({registrationAttempts: registrationAttempts + 1});
 
+            var shortDescription = form.find('input[name="instance/title"]');
+            if (shortDescription.length && !shortDescription.val().trim().length) {
+                shortDescription.val('Ошибка')
+            }
+
             if (toEngineerBtn.length) {
                 writeToLog('Нажимаю на кнопку: Передать Инженеру');
                 return toEngineerBtn.click();

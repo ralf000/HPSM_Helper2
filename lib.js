@@ -324,7 +324,7 @@ function writeToLog(message, url, date) {
 
     console.log(date + ': ' + message);
 
-    if (alertEmailPassword.length) {
+    if (alertEmailPassword && alertEmailPassword.length) {
         if (alertEmail.length) {
             $.ajax({
                 url: url,
@@ -386,7 +386,7 @@ function sendLogsToEmail(url, password, email, onSuccessCallback) {
 }
 
 function sendEmail(url, number, title, date) {
-    if (alertEmailPassword.length) {
+    if (alertEmailPassword && alertEmailPassword.length) {
         if (alertEmail.length) {
             console.log(now() + ' Отправка письма об авторегистрации обращения/инцидента ' + number + ' на адрес ' + alertEmail);
             return sendEmailViaAjax(url, number, title, date, alertEmail, alertEmailPassword)
