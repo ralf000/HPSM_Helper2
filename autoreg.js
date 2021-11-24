@@ -7,7 +7,7 @@ var delay = 500;
 var intValId;
 var taskType = '';
 var registrationAttempts = 0;
-var maxRegistrationAttempts = 5;
+var maxRegistrationAttempts = 100;
 //логин от HPSM
 var loginHPSM;
 //пароль от HPSM
@@ -24,6 +24,12 @@ var queueName;
 var representationName;
 //команда от бекграунда
 var todo;
+//список задач, в которых был применен шаблон (кнопка "применить шаблон" в обращении)
+var templateAppliedTasksList = {};
+//шаблон, который нужно применить к обращению
+var templateToApply = '';
+//номер текущего обращения/инцидента
+var currentNumber;
 
 /**
  * отслеживает состояние программы
@@ -187,11 +193,10 @@ function setSearchEnvironment() {
 }
 
 function isCorrectSearchEnvironment(callback) {
-    var isCorrect = true;
     var currentQueue = getQueue();
     var currentRepresentation = getRepresentation();
 
-    isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
+    var isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
     if (isCorrect) {
         callback();
     }
@@ -251,6 +256,8 @@ function registration() {
     chrome.extension.sendMessage({command: "newTask"}, function () {
 
         var number = getNumber();
+        chrome.storage.sync.set({currentNumber: number});
+
         var title = getTitle();
 
         var toEngineerBtn = w.find('button:contains("Передать Инженеру")');
@@ -258,24 +265,25 @@ function registration() {
         var OKBtn = w.find('button:contains("ОК")');
         var cancelBtn = w.find('button:contains("Отмена")');
         var updateBtn = w.find('button:contains("Обновить")');
+        var applyTemplateBtn = w.find('button:contains("Применить шаблон")');
 
-        if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу')
+        //если это не новое обращение и к нему только что не был применен шаблон
+        if ((getStatus() !== 'Новое' && getStatus() !== 'Направлен в группу' && !templateWasApplied())
             || (w.find('button:contains("Передать Инженеру")').length === 0 && w.find('button:contains("В работу")').length === 0)
         ) {
             //шлет email и регистрации обращения
             sendEmail(emailUrl, number, title, now());
             writeToLog('Выход из регистрации обращения');
 
-            if (OKBtn.length) {
-                writeToLog('Нажимаю на кнопку: ОК');
-                //сбрасывает счетчик попыток зарегистрировать обращение
-                chrome.storage.sync.set({registrationAttempts: 0});
-
-                return OKBtn.click();
-            }
+            //сбрасывает счетчик попыток зарегистрировать обращение
+            chrome.storage.sync.set({registrationAttempts: 0});
             if (cancelBtn.length) {
                 writeToLog('Нажимаю на кнопку: Отмена');
                 return cancelBtn.click();
+            }
+            if (OKBtn.length) {
+                writeToLog('Нажимаю на кнопку: ОК');
+                return OKBtn.click();
             }
         }
         writeToLog('Регистрирую обращение/инцидент под номером ' + number);
@@ -294,6 +302,20 @@ function registration() {
                 chrome.storage.sync.set({registrationAttempts: 0});
                 return updateBtn.click();
             }
+
+            if (taskType === 'Обращение') {
+                //если у обращения ещё не был применен шаблон, то применяем
+                if (!templateAppliedTasksList[number]) {
+                    if (applyTemplateBtn.length) {
+                        writeToLog('Перехожу к применению шаблона для обращение/инцидента под номером ' + number);
+                        return applyTemplateBtn.click();
+                    } else {
+                        //то считаем шаблон примененным
+                        setAppliedTemplate();
+                    }
+                }
+            }
+
             chrome.storage.sync.set({registrationAttempts: registrationAttempts + 1});
 
             var shortDescription = form.find('input[name="instance/title"]');
@@ -310,13 +332,13 @@ function registration() {
                 return toWorkBtn.click();
             }
         }
-        if (OKBtn.length) {
-            writeToLog('Нажимаю на кнопку: ОК');
-            return OKBtn.click();
-        }
         if (cancelBtn.length) {
             writeToLog('Нажимаю на кнопку: Отмена');
             return cancelBtn.click();
+        }
+        if (OKBtn.length) {
+            writeToLog('Нажимаю на кнопку: ОК');
+            return OKBtn.click();
         }
         writeToLog('Ошибка: не найдено кнопок для продолжения авторегистрации');
     });
@@ -339,13 +361,18 @@ function onOffRegHandler(registration) {
         if (isContinuePage()) {
             return handleContinuePage();
         }
+        if (isTemplatesPage()) {
+            return handleTemplatesPage();
+        }
         getCommandFromBackground();
     }
 }
 
 function checkTaskType() {
-    var frame = getActiveFrameByHPSM();
-    taskType = frame.find('#X1 span').text();
+    if (!w.length || !w.find('iframe').length || !w.find('iframe').attr('title')) {
+        taskType = 'Инцидент';
+    }
+    taskType = w.find('iframe').attr('title').indexOf('Обращение') !== -1 ? 'Обращение' : 'Инцидент';
 }
 
 function init() {

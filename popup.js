@@ -52,6 +52,14 @@ function addHandlers() {
         chrome.storage.sync.set({updateTasksTime: time});
         $(this).css({'background-color': 'green'})
     });
+
+    $('#save-template').on('click', function (e) {
+        e.preventDefault();
+        var template = $('#template-input').val();
+        if (!template.length) return;
+        chrome.storage.sync.set({templateToApply: template});
+        $(this).css({'background-color': 'green'})
+    });
 }
 
 function setAutoRegStatus() {
@@ -94,13 +102,13 @@ function saveCurrentTab() {
 
 function fillFields() {
     chrome.storage.sync.get('email', function (result) {
-        if (result.email.length) {
+        if (result.email && result.email.length) {
             $('#email-input').val(result.email);
             $('#save-email').css({'background-color': 'green'});
         }
     });
     chrome.storage.sync.get('password', function (result) {
-        if (result.password.length) {
+        if (result.password && result.password.length) {
             $('#password-input').val(result.password);
             $('#save-password').css({'background-color': 'green'});
         }
@@ -115,6 +123,12 @@ function fillFields() {
         if (result.passwordHPSM) {
             $('#password-hpsm-input').val(result.passwordHPSM);
             $('#save-hpsm-password').css({'background-color': 'green'});
+        }
+    });
+    chrome.storage.sync.get('templateToApply', function (result) {
+        if (result.templateToApply && result.templateToApply.length) {
+            $('#template-input').val(result.templateToApply);
+            $('#save-template').css({'background-color': 'green'});
         }
     });
     chrome.storage.sync.get('updateTasksTime', function (result) {

@@ -19,6 +19,26 @@ function handleContinuePage() {
     }, 300);
 }
 
+function handleTemplatesPage() {
+    writeToLog('Выбираю шаблон для применения');
+
+    var templateLink = findTemplateLink();
+    if (!templateLink.length) return false;
+
+    writeToLog(`Применяю шаблон "${templateToApply}"`);
+
+    setAppliedTemplate();
+
+    chrome.extension.sendMessage({command: "templateWasApplied", delay: 1000 * 10});
+
+    return templateLink[0].click();
+}
+
+function setAppliedTemplate() {
+    templateAppliedTasksList[currentNumber] = true;
+    chrome.storage.sync.set({templateAppliedTasksList: templateAppliedTasksList});
+}
+
 
 /**
  * Возращает id для активного окна, вычисляемый по активной вкладке
@@ -107,6 +127,18 @@ function isTasksList() {
  */
 function isContinuePage() {
     return $('#btnContinue').length || $('#loginBtn').length;
+}
+
+function findTemplateLink() {
+    return getActiveFormByHPSM().find(`a:contains("${templateToApply}")`);
+}
+
+/**
+ * Страница со списком шаблонов для быстрого заполнения обращения
+ * @returns bool
+ */
+function isTemplatesPage() {
+    return findTemplateLink().length;
 }
 
 /**
@@ -272,6 +304,40 @@ function getTodo(callback) {
 }
 
 /**
+ * Получает шаблон, который нужно применить к обращению
+ */
+function getTemplateToApply(callback) {
+    chrome.storage.sync.get('templateToApply', function (result) {
+        templateToApply = result.templateToApply;
+        return callback(templateToApply);
+    });
+}
+
+/**
+ * Получает список задач, в которых был применен шаблон (кнопка "применить шаблон" в обращении)
+ */
+function getTemplateAppliedTasksList(callback) {
+    chrome.storage.sync.get('templateAppliedTasksList', function (result) {
+        templateAppliedTasksList = result.templateAppliedTasksList || {};
+        return callback(templateAppliedTasksList);
+    });
+}
+
+function templateWasApplied() {
+    return templateAppliedTasksList[currentNumber];
+}
+
+/**
+ * Получает номер текущего обращения/инцидента (при наличии)
+ */
+function getCurrentNumber(callback) {
+    chrome.storage.sync.get('currentNumber', function (result) {
+        currentNumber = result.currentNumber;
+        return callback(currentNumber);
+    });
+}
+
+/**
  * Получает конфиг расширения
  * @param callback
  */
@@ -286,7 +352,13 @@ function getConfig(callback) {
                                 getSavedQueueName(function () {
                                     getSavedRepresentationName(function () {
                                         getTodo(function () {
-                                            setTimeout(callback, delay * 3);
+                                            getTemplateAppliedTasksList(function () {
+                                                getTemplateToApply(function () {
+                                                    getCurrentNumber(function () {
+                                                        setTimeout(callback, delay * 3);
+                                                    });
+                                                });
+                                            });
                                         });
                                     });
                                 });

@@ -232,19 +232,22 @@ label.onoffswitch-label {
     padding-bottom: 5px;
 }
 
-.email-form, .creds-form, .time-form {
+.email-form, .creds-form, .time-form, .settings-form {
     margin: 10px 10px 40px 10px;
 }
 
-.email-form input[type=email], .email-form input[type=password],
-.creds-form input[type=text], .creds-form input[type=password],
+.email-form input[type=email],
+.email-form input[type=password],
+.creds-form input[type=text],
+.creds-form input[type=password],
+.settings-form input[type=text],
 .time-form input[type=number] {
     width: 70%;
     float: left;
     padding: 3px;
 }
 
-.email-form input[type=button], .creds-form input[type=button], .time-form input[type=button] {
+.email-form input[type=button], .creds-form input[type=button], .time-form input[type=button], .settings-form input[type=button] {
     width: 20%;
     float: left;
     background-color: #bdbbbb;
