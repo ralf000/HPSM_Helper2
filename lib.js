@@ -184,7 +184,7 @@ function getTopLayer() {
                     justify-content: center;\
                     transition: transform .3s ease-out,-webkit-transform .3s ease-out;\
                     min-height: calc(100% - (1.75rem * 2))">\
-                        <img src="http://utilites.2hut.ru/loading.gif" style="width: 400px" alt="">\
+                        <img src="https://utilites.2hut.ru/loading.gif" style="width: 400px" alt="">\
                         Авторегистрация<br>\
                     </span>\
                 </div>';
@@ -414,10 +414,10 @@ function writeToLog(message, url, date) {
                 }
             });
         } else {
-            console.info(now() + ' Не введен email для отправки писем');
+            // console.info(now() + ' Не введен email для отправки писем');
         }
     } else {
-        console.info(now() + ' Не введен пароль для отправки писем');
+        // console.info(now() + ' Не введен пароль для отправки писем');
     }
 }
 
@@ -433,7 +433,7 @@ function sendLog(url) {
             console.info(now() + ' Не введен email для отправки писем');
         }
     } else {
-        console.info(now() + ' Не введен пароль для отправки писем');
+        // console.info(now() + ' Не введен пароль для отправки писем');
     }
 }
 

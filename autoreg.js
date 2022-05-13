@@ -84,6 +84,12 @@ function wait() {
     addTopLayerOnPage();
 
     chrome.extension.sendMessage({command: "updateTaskList", delay: waitTime});
+
+    //каждую десятую минуту обновляем страницу для того, чтобы остаться авторизованным
+    if (!initRegistration && (new Date()).getMinutes() % 10 === 0) {
+        writeToLog('Обновляю страницу для избежания сброса сессии');
+        return location.reload();
+    }
 }
 
 function isNewTask() {
@@ -118,11 +124,11 @@ function entranceToTask() {
         writeToLog('Перехожу к регистрации');
 
         if (taskType === 'Обращение') {
-            if ((taskList.length && taskList.find('div:contains("Новое")') !== 0)) {
+            if ((taskList.length && taskList.find('div:contains("Новое")').length !== 0)) {
                 if (taskList.length && taskList
                     .find('div:contains("Новое")')
                     .closest('table.x-grid3-row-table')
-                    .find('a') !== 0)
+                    .find('a').length !== 0)
                     return taskList
                         .find('div:contains("Новое")')
                         .closest('table.x-grid3-row-table')
@@ -372,7 +378,7 @@ function checkTaskType() {
     if (!w.length || !w.find('iframe').length || !w.find('iframe').attr('title')) {
         taskType = 'Инцидент';
     }
-    taskType = w.find('iframe').attr('title').indexOf('Обращение') !== -1 ? 'Обращение' : 'Инцидент';
+    taskType = w.find('iframe').length && w.find('iframe').attr('title').indexOf('Обращение') !== -1 ? 'Обращение' : 'Инцидент';
 }
 
 function init() {
