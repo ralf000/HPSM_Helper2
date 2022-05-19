@@ -16,7 +16,6 @@ function addHandlers() {
     $('#save-email').on('click', function (e) {
         e.preventDefault();
         var email = $('#email-input').val();
-        if (!email.length) return;
         chrome.storage.sync.set({email: email});
         $(this).css({'background-color': 'green'})
     });
@@ -24,7 +23,6 @@ function addHandlers() {
     $('#save-password').on('click', function (e) {
         e.preventDefault();
         var password = $('#password-input').val();
-        if (!password.length) return;
         chrome.storage.sync.set({password: password});
         $(this).css({'background-color': 'green'})
     });
@@ -32,7 +30,6 @@ function addHandlers() {
     $('#save-hpsm-login').on('click', function (e) {
         e.preventDefault();
         var login = $('#login-hpsm-input').val();
-        if (!login.length) return;
         chrome.storage.sync.set({loginHPSM: login});
         $(this).css({'background-color': 'green'})
     });
@@ -40,7 +37,6 @@ function addHandlers() {
     $('#save-hpsm-password').on('click', function (e) {
         e.preventDefault();
         var password = $('#password-hpsm-input').val();
-        if (!password.length) return;
         chrome.storage.sync.set({passwordHPSM: password});
         $(this).css({'background-color': 'green'})
     });
@@ -48,7 +44,6 @@ function addHandlers() {
     $('#save-time').on('click', function (e) {
         e.preventDefault();
         var time = $('#time-input').val();
-        if (!time.length) return;
         chrome.storage.sync.set({updateTasksTime: time});
         $(this).css({'background-color': 'green'})
     });
@@ -56,7 +51,6 @@ function addHandlers() {
     $('#save-template').on('click', function (e) {
         e.preventDefault();
         var template = $('#template-input').val();
-        if (!template.length) return;
         chrome.storage.sync.set({templateToApply: template});
         $(this).css({'background-color': 'green'})
     });

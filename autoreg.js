@@ -79,17 +79,18 @@ function update() {
 
 function wait() {
 
+    //каждую десятую минуту обновляем страницу для того, чтобы остаться авторизованным
+    if (!initRegistration && (new Date()).getMinutes() % 10 === 0) {
+        writeToLog('Обновляю страницу для избежания сброса сессии');
+        chrome.extension.sendMessage({command: "updateTaskList"});
+        return location.reload();
+    }
+
     writeToLog('Новых обращений/инцидентов не найдено. До следующей проверки: ' + (waitTime + backgroundDelay) / 60 / 1000 + ' мин');
 
     addTopLayerOnPage();
 
     chrome.extension.sendMessage({command: "updateTaskList", delay: waitTime});
-
-    //каждую десятую минуту обновляем страницу для того, чтобы остаться авторизованным
-    if (!initRegistration && (new Date()).getMinutes() % 10 === 0) {
-        writeToLog('Обновляю страницу для избежания сброса сессии');
-        return location.reload();
-    }
 }
 
 function isNewTask() {
