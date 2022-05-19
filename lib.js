@@ -346,8 +346,8 @@ function getConfig(callback) {
         getRegistrationAttemptsAmount(function () {
             getLoginHPSM(function () {
                 getPasswordHPSM(function () {
-                    getAlertEmail(function () {
-                        getAlertEmailPassword(function () {
+                    // getAlertEmail(function () {
+                        // getAlertEmailPassword(function () {
                             getInitRegistrationTag(function () {
                                 getSavedQueueName(function () {
                                     getSavedRepresentationName(function () {
@@ -363,8 +363,8 @@ function getConfig(callback) {
                                     });
                                 });
                             });
-                        });
-                    });
+                        // });
+                    // });
                 });
             });
         });
