@@ -10,6 +10,12 @@
 /* header/copyright link */
 
 .container {
+    font-size: 10px;
+    width: 215px;
+}
+
+input, textarea {
+    font-size: 10px;
 }
 
 .link {
@@ -110,7 +116,7 @@
 
 .onoffswitch {
     position: relative;
-    width: 170px;
+    width: 200px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -178,7 +184,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 147px;
+    right: 177px;
     transition: all 0.05s ease-in 0s;
 }
 
@@ -232,23 +238,49 @@ label.onoffswitch-label {
     padding-bottom: 5px;
 }
 
-.email-form, .creds-form, .time-form {
-    margin: 10px 10px 40px 10px;
+.email-form, .creds-form, .time-form, .settings-form {
+    margin: 10px 0;
 }
 
-.email-form input[type=email], .email-form input[type=password],
-.creds-form input[type=text], .creds-form input[type=password],
-.time-form input[type=number] {
-    width: 70%;
+.email-form input[type=email],
+.email-form input[type=password],
+.creds-form input[type=text],
+.creds-form input[type=password],
+.settings-form textarea,
+.time-form input[type=number],
+input.input {
+    width: 75%;
     float: left;
     padding: 3px;
 }
 
-.email-form input[type=button], .creds-form input[type=button], .time-form input[type=button] {
-    width: 20%;
+.email-form input[type=button], .creds-form input[type=button], .time-form input[type=button], .settings-form input[type=button] {
+    width: 15%;
     float: left;
     background-color: #bdbbbb;
-    font-size: 16px;
+    font-size: 13px;
+}
+
+hr {
+    clear: both;
+    margin: 10px 0;
+}
+
+.levels-block, .tg-appeal-notification-settings, .tg-incident-notification-settings {
+    display: none;
+}
+
+.levels-block label {
+    width: 100px;
+    display: inline-block;
+}
+
+.appeals-block {
+    background-color: antiquewhite;
+}
+
+.incidents-block {
+    background-color: floralwhite;
 }
 
 .toggle-block {

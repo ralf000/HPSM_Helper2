@@ -14,7 +14,7 @@
 
     <div class="checkBlock">
         <div class="check">
-            <div class="title">Автоматическая регистрация</div>
+            <div class="title"><b>Автоматическая регистрация</b></div>
             <div class="onoffswitch">
                 <input type="checkbox" name="autoReg" class="onoffswitch-checkbox" id="autoReg">
                 <label class="onoffswitch-label" for="autoReg">
@@ -25,38 +25,126 @@
         </div>
     </div>
 
-    <a href="#" data-target="#settings">Настройки</a>
+    <a href="#" data-target="#settings"><b>Настройки</b></a>
     <div id="settings" class="toggle-block">
         <form class="creds-form">
-            <label for="login-hpsm-input">Логин от HPSM</label>
+            <label for="login-hpsm-input"><b>Логин от HPSM</b></label>
             <input type="text" id="login-hpsm-input">
             <input type="button" id="save-hpsm-login" value="&#9745;"><br>
-            <label for="password-hpsm-input">Пароль от HPSM</label>
+            <label for="password-hpsm-input"><b>Пароль от HPSM</b></label>
             <input type="password" id="password-hpsm-input">
             <input type="button" id="save-hpsm-password" value="&#9745;"><br>
 
-            <label for="login-hpsm-input">Логин от новой HPSM</label>
+            <label for="login-hpsm-input"><b>Логин от новой HPSM</b></label>
             <input type="text" id="login-hpsm-new-input">
             <input type="button" id="save-hpsm-new-login" value="&#9745;"><br>
-            <label for="password-hpsm-new-input">Пароль от новой HPSM</label>
+            <label for="password-hpsm-new-input"><b>Пароль от новой HPSM</b></label>
             <input type="password" id="password-hpsm-new-input">
             <input type="button" id="save-hpsm-new-password" value="&#9745;">
         </form>
 
         <form class="email-form">
-            <label for="email-input">Email для оповещений</label>
+            <label for="email-input"><b>Email для оповещений</b></label>
             <input type="email" id="email-input">
             <input type="button" id="save-email" value="&#9745;"><br>
-            <label for="password-input">Пароль для оповещений</label>
+            <label for="password-input"><b>Пароль для оповещений</b></label>
             <input type="password" id="password-input">
             <input type="button" id="save-password" value="&#9745;">
         </form>
 
         <form class="time-form">
-            <label for="time-input">Частота проверки новых обращений/инцидентов (в минутах) <span title="Чем меньше значение тем чаще идет проверка, но тем больше расходуется память. Значение по-умолчанию - 10 минут" style="cursor: pointer">&#10026;</span></label>
+            <label for="time-input"><b>Частота проверки новых обращений/инцидентов (в минутах)</b> <span title="Чем меньше значение тем чаще идет проверка, но тем больше расходуется память. Значение по-умолчанию - 10 минут" style="cursor: pointer">&#10026;</span></label>
             <input type="number" id="time-input" placeholder="10">
             <input type="button" id="save-time" value="&#9745;"><br>
         </form>
+
+        <br>
+        <hr>
+
+        <div class="settings-form">
+            <span id="notifications"><b>Настройки обращений/инцидентов</b></span>
+            <form class="notification-form">
+                <div class="appeals-block">
+                    <input type="checkbox" name="appeals-tag" value="1" class="levels-trigger"> <b>Обращения</b><br>
+                    <div class="levels-block">
+                        <div>
+                            <label>Оповещения:</label>
+                            <input type="checkbox" name="appeal.notifications[]" value="1">1
+                            <input type="checkbox" name="appeal.notifications[]" value="2">2
+                            <input type="checkbox" name="appeal.notifications[]" value="3">3
+                            <input type="checkbox" name="appeal.notifications[]" value="4">4
+                        </div>
+                        <div class="tg-appeal-notification-settings">
+                            <span><b>Настройки оповещений в телеграмм</b></span>
+                            <div>
+                                <label for="tg-appeal-bot-api_token"><b>api token</b></label>
+                                <input type="text" id="tg-appeal-bot-api_token" class="input">
+                                <input type="button" id="tg-appeal-bot-api_token-btn" value="&#9745;">
+                            </div>
+                            <div>
+                                <label for="tg-appeal-chat_id"><b>chat id</b></label>
+                                <input type="text" id="tg-appeal-chat_id" class="input">
+                                <input type="button" id="tg-appeal-chat_id-btn" value="&#9745;">
+                            </div>
+                        </div>
+                        <div>
+                            <label>Не регистрировать:</label>
+                            <input type="checkbox" name="appeal.not-reg[]" value="1">1
+                            <input type="checkbox" name="appeal.not-reg[]" value="2">2
+                            <input type="checkbox" name="appeal.not-reg[]" value="3">3
+                            <input type="checkbox" name="appeal.not-reg[]" value="4">4
+                        </div>
+                        <div>
+                            <label>В работу:</label>
+                            <input type="checkbox" name="appeal.to-work[]" value="1">1
+                            <input type="checkbox" name="appeal.to-work[]" value="2">2
+                            <input type="checkbox" name="appeal.to-work[]" value="3">3
+                            <input type="checkbox" name="appeal.to-work[]" value="4">4
+                        </div>
+                    </div>
+                </div>
+
+                <div class="incidents-block">
+                    <input type="checkbox" name="incidents-tag" value="1" class="levels-trigger"> <b>Инциденты</b><br>
+                    <div class="levels-block">
+                        <div>
+                            <label>Оповещения:</label>
+                            <input type="checkbox" name="incident.notifications[]" value="1">1
+                            <input type="checkbox" name="incident.notifications[]" value="2">2
+                            <input type="checkbox" name="incident.notifications[]" value="3">3
+                            <input type="checkbox" name="incident.notifications[]" value="4">4
+                        </div>
+                        <div class="tg-incident-notification-settings">
+                            <span><b>Настройки оповещений в телеграмм</b></span>
+                            <div>
+                                <label for="tg-incident-bot-api_token"><b>api token</b></label>
+                                <input type="text" id="tg-incident-bot-api_token" class="input">
+                                <input type="button" id="tg-incident-bot-api_token-btn" value="&#9745;">
+                            </div>
+                            <div>
+                                <label for="tg-incident-chat_id"><b>chat id</b></label>
+                                <input type="text" id="tg-incident-chat_id" class="input">
+                                <input type="button" id="tg-incident-chat_id-btn" value="&#9745;">
+                            </div>
+                        </div>
+                        <div>
+                            <label>Не регистрировать:</label>
+                            <input type="checkbox" name="incident.not-reg[]" value="1">1
+                            <input type="checkbox" name="incident.not-reg[]" value="2">2
+                            <input type="checkbox" name="incident.not-reg[]" value="3">3
+                            <input type="checkbox" name="incident.not-reg[]" value="4">4
+                        </div>
+                        <div>
+                            <label>В работу:</label>
+                            <input type="checkbox" name="incident.to-work[]" value="1">1
+                            <input type="checkbox" name="incident.to-work[]" value="2">2
+                            <input type="checkbox" name="incident.to-work[]" value="3">3
+                            <input type="checkbox" name="incident.to-work[]" value="4">4
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="popup.js" type="text/javascript"></script>
