@@ -113,16 +113,45 @@ function wait() {
     chrome.extension.sendMessage({command: "updateTaskList", delay: waitTime});
 }
 
-function isNewTask() {
-    var taskList = getRecordListByHPSM();
-    if (isAppeal()) {
-        //Обращение
-        return (taskList.length && taskList.find('[role=gridcell]:contains("Новое")').length !== 0)
-            || (taskList.length && taskList.find('a:contains("Новое")').length !== 0);
-    } else {
-        //Инцидент
-        return (taskList.find('[role=gridcell]:contains("Направлен в группу")').length !== 0)
+//проходит по списку обращений/инцидентов
+function tasksListIterator(filter) {
+    const taskList = getRecordListByHPSM();
+
+    return taskList
+        .find('table.x-grid3-row-table')
+        .filter(filter);
+}
+
+//ищет новые обращения/инциденты в списке в соответствии с ограничениями в настройках
+function isNewTaskFilter(i, el) {
+    let number = $(el).find('[id^="ext-gen-list"]').text().trim();
+    const title = getTaskValueFromList(el, 'Краткое описание');
+    const priority = getTaskValueFromList(el, 'Приоритет').match(/\d+/)[0];
+    const isNewStatus = isAppeal() ? 'Новое' : 'Направлен в группу';
+    if (!$(el).find('div:contains("' + isNewStatus + '")').length) return false;
+    //фильтруем талоны с превышенным количеством попыток их сохранить
+    if (savingAttempts && savingAttempts[number] && savingAttempts[number] >= maxSavingAttempts) {
+        sendExceededTaskNotificationMessage(number, title, now());
+        return false;
     }
+    //шлем уведомление о регистрации обращения/инцидента
+    sendNewTaskNotification(number, priority, title, now());
+    //если для текущего приоритета талона стоит пометка "не регистрировать", то пропускаем его
+    if (priority) {
+        const isNotReg = isAppeal() ? appealNotReg[priority - 1] : incidentNotReg[priority - 1];
+        if (isNotReg) {
+            writeToLog(`Обращение/инцидент ${number} не будет зарегистрировано в соответствии с настройками`);
+            return false;
+        }
+    }
+    return true;
+}
+
+//возвращает номер ближайшего нового обращения/инцидента или false
+function getNewTask() {
+    const tasks = tasksListIterator(isNewTaskFilter);
+    if (!tasks.length) return false;
+    return tasks.first().find('[id^="ext-gen-list"]').text().trim();
 }
 
 function checkNewTask() {
@@ -130,94 +159,31 @@ function checkNewTask() {
 
     writeToLog('Проверяю наличие новых обращений/инцидентов');
 
-    if (isNewTask()) {
-        isCorrectSearchEnvironment(findAndEnterToTask);
+    const newTaskNumber = getNewTask();
+    if (newTaskNumber && isCorrectSearchEnvironment()) {
+        findAndEnterToTask(newTaskNumber);
     } else {
         waitWithCorrectEnvironment();
     }
 }
 
-function findAndEnterToTask() {
+function findAndEnterToTask(number) {
 
-    writeToLog('Обнаружено новое обращение/инцидент');
+    writeToLog(`Обнаружено новое обращение/инцидент ${number}`);
 
     chrome.extension.sendMessage({command: "newTask"}, function () {
 
-        writeToLog('Перехожу к регистрации');
+        writeToLog(`Перехожу к регистрации ${number}`);
 
-        const taskList = getRecordListByHPSM();
-        if (isAppeal()) {
-            return enterToAppeal(taskList);
-        }
-        return enterToIncident(taskList);
+        const task = tasksListIterator((i, el) => $(el).find('[id^="ext-gen-list"]').text() === number);
+        if (task.length) task.find('a')[0].click();
     });
 }
 
-function getTitleFromTaskFromList(task) {
+function getTaskValueFromList(task, header) {
     const frame = getActiveFrameByHPSM();
-    const index = frame.find('.x-grid3-header').find('.x-grid3-hd-inner:contains("Краткое описание")').closest('td').index();
+    const index = frame.find('.x-grid3-header').find('.x-grid3-hd-inner:contains("' + header + '")').closest('td').index();
     return $(task).find(`.x-grid3-td-${index}`).text().trim();
-}
-
-function enterToAppeal(taskList) {
-    if (!taskList.length || taskList.find('div:contains("Новое")') === 0) return;
-
-    const newTasks = taskList
-        .find('table.x-grid3-row')
-        .filter(function (i, el) {
-            let number = $(el).find('[id^="ext-gen-list"]').text().trim();
-            let title = getTitleFromTaskFromList();
-            if ($(el).find('div:contains("Новое")') === 0) return false;
-            //фильтруем талоны с превышенным количеством попыток их сохранить или если запрещено регистрировать
-            if (savingAttempts[number] && savingAttempts[number] >= maxSavingAttempts) {
-                sendExceededTaskNotificationMessage(number, title, now());
-                return false;
-            }
-            //шлем уведомление о регистрации обращения/инцидента
-            sendNewTaskNotification(number, title, now());
-            //если для текущего приоритета талона стоит пометка "не регистрировать", то пропускаем его
-            if ($(el).find('.field_priority_code').length) {
-                const priority = $(el).find('.field_priority_code').text().trim().match(/\d+/)[0];
-                if (incidentNotReg[priority - 1]) return false;
-            }
-            return true;
-        });
-
-    if (newTasks.length) {
-        newTasks
-            .find('div:contains("Новое")')
-            .closest('table.x-grid3-row-table')
-            .find('a')[0]
-            .click();
-    }
-}
-
-function enterToIncident(taskList) {
-    if (!taskList.length || taskList.find('div:contains("Направлен в группу")') === 0) return;
-
-    const newTasks = taskList
-        .find('table.x-grid3-row-table')
-        .filter(function (i, el) {
-            let number = $(el).find('[id^="ext-gen-list"]').text().trim();
-            let title = getTitleFromTaskFromList();
-            if (!$(el).find('div:contains("Направлен в группу")').length) return false;
-            //фильтруем талоны с превышенным количеством попыток их сохранить или если запрещено регистрировать
-            if (savingAttempts[number] && savingAttempts[number] >= maxSavingAttempts) {
-                sendExceededTaskNotificationMessage(number, title, now());
-                return false;
-            }
-            //шлем уведомление о регистрации обращения/инцидента
-            sendNewTaskNotification(number, title, now());
-            //если для текущего приоритета талона стоит пометка "не регистрировать", то пропускаем его
-            if ($(el).find('.field_priority_code').length) {
-                const priority = $(el).find('.field_priority_code').text().trim().match(/\d+/)[0];
-                if (incidentNotReg[priority - 1]) return false;
-            }
-            return true;
-        })
-        .find('a');
-
-    if (newTasks.length) newTasks[0].click();
 }
 
 /**
@@ -268,14 +234,8 @@ function setSearchEnvironment() {
     return wait();
 }
 
-function isCorrectSearchEnvironment(callback) {
-    var currentQueue = getQueue();
-    var currentRepresentation = getRepresentation();
-
-    var isCorrect = (currentQueue === queueName) && (currentRepresentation === representationName);
-    if (isCorrect) {
-        callback();
-    }
+function isCorrectSearchEnvironment() {
+    return (!queueName || getQueue() === queueName) && (!representationName || getRepresentation() === representationName);
 }
 
 /**
@@ -329,12 +289,11 @@ function registration() {
         var number = getNumber();
         var title = getTitle();
 
-        var toEngineerBtn = w.find('button:contains("Передать Инженеру")');
-        var toWorkBtn = w.find('button:contains("В работу")');
+        var toWorkBtn = isAppeal() ? w.find('button:contains("Передать Инженеру")') : w.find('button:contains("В работу")');
         var OKBtn = w.find('button:contains("ОК")');
 
         if (isNewHPSM()) {
-            toWorkBtn = w.find('button:contains("Взять в работу")');
+            toWorkBtn = isAppeal() ? w.find('button:contains("Передать Инженеру")') : w.find('button:contains("Взять в работу")');
             OKBtn = w.find('button:contains("Возврат")');
         }
         var cancelBtn = w.find('button:contains("Отмена")');
@@ -342,44 +301,35 @@ function registration() {
         //если стоит метка, что обращения/инциденты данного приоритета нужно брать в работу, то пытаемся взять в работу
         const priority = getPriority();
         const toWorkLevels = isAppeal() ? appealToWork : incidentToWork;
-        if (priority && toWorkLevels[priority - 1] && toWorkBtn.length) {
-            return clickToWork(toWorkBtn, cancelBtn, number, title);
+
+        if (priority && toWorkBtn.length) {
+            if (toWorkLevels[priority - 1]) {
+                writeToLog(isAppeal() ? 'Обращение будет взято в работу' : 'Инцидент будет взят в работу');
+                return clickToWork(toWorkBtn, cancelBtn, number, title);
+            } else {
+                writeToLog('Обращение/инцидент не будет взят в работу с соответствии с настройками');
+            }
         }
 
-        if ((getStatus() !== statusNew && getStatus() !== 'Направлен в группу')
-            || (!toEngineerBtn.length && !toWorkBtn.length)
-        ) {
+        const status = getStatus();
+        if ((status !== statusNew && status !== 'Направлен в группу') || !toWorkBtn.length) {
             //шлет уведомление о регистрации обращения/инцидента
             // sendNewTaskNotification(number, title, now());
             writeToLog('Выход из регистрации обращения');
 
-            if (OKBtn.length) {
-                writeToLog('Нажимаю на кнопку: ОК/Возврат');
-                return OKBtn.click();
-            }
             if (cancelBtn.length) {
                 writeToLog('Нажимаю на кнопку: Отмена');
                 return cancelBtn.click();
+            }
+            if (OKBtn.length) {
+                writeToLog('Нажимаю на кнопку: ОК/Возврат');
+                return OKBtn.click();
             }
             return writeToLog('Ошибка: не найдено кнопок для выхода из зарегистрированного обращения/инцидента');
         }
 
         writeToLog('Регистрирую обращение/инцидент под номером ' + number);
 
-        if (toEngineerBtn.length) {
-            return setSavingAttempts(
-                number,
-                () => {
-                    writeToLog('Нажимаю на кнопку: Передать Инженеру');
-                    toEngineerBtn.click()
-                },
-                () => {
-                    writeToLog(`Превышено количество попыток сохранения талона ${number}. Нажимаю на кнопку: Отмена`);
-                    sendExceededTaskNotificationMessage(number, title, now());
-                    cancelBtn.click()
-                }
-            );
-        }
         if (OKBtn.length) {
             writeToLog('Нажимаю на кнопку: ОК/Возврат');
             return OKBtn.click();

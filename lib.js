@@ -44,18 +44,23 @@ function isCorrectTelegramNotificationSettings() {
     return true;
 }
 
-function isAllowedToSendNewTaskNotification(number) {
-    if ($.inArray(number, newTaskSentMessages)) return false;
+function isAllowedToSendNewTaskNotification(number, priority) {
+    if ($.inArray(number, newTaskSentMessages) !== -1) return false;
     if (!isCorrectTelegramNotificationSettings()) return false;
 
-    const priority = getPriority();
     if (!priority) return false;
-    return isAppeal() ? appealNotifications[priority - 1] : incidentNotifications[priority - 1];
+
+    const allowedPriority = isAppeal() ? appealNotifications[priority - 1] : incidentNotifications[priority - 1];
+    if (!allowedPriority) {
+        writeToLog(`Оповещение об обнаружении обращения/инцидента ${number} не будет отправлено в телеграмм в соответствии с настройками`);
+        return false;
+    }
+    return true;
 }
 
 function isAllowedToSendExceededTaskNotification(number) {
     if (!isCorrectTelegramNotificationSettings()) return false;
-    return !$.inArray(number, exceededTaskSentMessages);
+    return $.inArray(number, exceededTaskSentMessages) !== -1;
 }
 
 /**
@@ -194,7 +199,7 @@ function getTopLayer() {
                     justify-content: center;\
                     transition: transform .3s ease-out,-webkit-transform .3s ease-out;\
                     min-height: calc(100% - (1.75rem * 2))">\
-                        <img src="http://utilites.2hut.ru/loading.gif" style="width: 400px" alt="">\
+                        <img src="https://utilites.2hut.ru/loading.gif" style="width: 400px" alt="">\
                         Авторегистрация<br>\
                     </span>\
                 </div>';
@@ -231,7 +236,7 @@ function setSavingAttempts(number, successCallback, errorCallback) {
 /**
  * Получает установленную очередь для поиска обращений/инцидентов
  */
-async function getQueue() {
+function getQueue() {
     var form = getActiveFormByHPSM();
     var queueInput = isNewHPSM() ? $(form.find('#X5')) : $(form.find('#X4'));
     return queueInput.length ? queueInput.val() : '';
@@ -240,7 +245,7 @@ async function getQueue() {
 /**
  * Получает установленное представление для поиска обращений/инцидентов
  */
-async function getRepresentation() {
+function getRepresentation() {
     var form = getActiveFormByHPSM();
     var representationInput = isNewHPSM() ? $(form.find('#X7')) : $(form.find('#X6'));
     return representationInput.length ? representationInput.val() : '';
@@ -424,21 +429,21 @@ async function getConfig(callback) {
     queueName = await getSavedQueueName();
     representationName = await getSavedRepresentationName();
     todo = await getTodo();
-    savingAttempts = await getSavingAttempts();
+    savingAttempts = await getSavingAttempts() || {};
     appealsTag = await getAppealsTag();
     incidentsTag = await getIncidentsTag();
-    appealNotifications = await getAppealNotifications();
-    incidentNotifications = await getIncidentNotifications();
-    appealNotReg = await getAppealNotReg();
-    incidentNotReg = await getIncidentNotReg();
-    appealToWork = await getAppealToWork();
-    incidentToWork = await getIncidentToWork();
+    appealNotifications = await getAppealNotifications() || [];
+    incidentNotifications = await getIncidentNotifications() || [];
+    appealNotReg = await getAppealNotReg() || [];
+    incidentNotReg = await getIncidentNotReg() || [];
+    appealToWork = await getAppealToWork() || [];
+    incidentToWork = await getIncidentToWork() || [];
     tgAppealBotApiToken = await getTgAppealBotApiToken();
     tgIncidentBotApiToken = await getTgIncidentBotApiToken();
     tgAppealChatId = await getTgAppealChatId();
     tgIncidentChatId = await getTgIncidentChatId();
-    newTaskSentMessages = await getNewTaskSentMessages();
-    exceededTaskSentMessages = await getExceededTaskSentMessages();
+    newTaskSentMessages = await getNewTaskSentMessages() || [];
+    exceededTaskSentMessages = await getExceededTaskSentMessages() || [];
     setTimeout(callback, delay * 3);
 }
 
@@ -524,7 +529,7 @@ function writeToLog(message, url, date) {
                 }
             });
         } else {
-            console.info(now() + ' Не введен email для отправки писем');
+            writeToLog('Не введен email для отправки писем');
         }
     } else {
         //console.info(now() + ' Не введен пароль для отправки писем');
@@ -540,7 +545,7 @@ function sendLog(url) {
         if (alertEmail) {
             return sendLogsToEmail(url, alertEmailPassword, alertEmail)
         } else {
-            console.info(now() + ' Не введен email для отправки писем');
+            writeToLog('Не введен email для отправки писем');
         }
     } else {
         //console.info(now() + ' Не введен пароль для отправки писем');
@@ -567,10 +572,12 @@ function sendLogsToEmail(url, password, email, onSuccessCallback) {
     });
 }
 
-function sendNewTaskNotification(number, title, date) {
-    if (!isAllowedToSendNewTaskNotification(number)) return false;
+function sendNewTaskNotification(number, priority, title, date) {
+    if (!isAllowedToSendNewTaskNotification(number, priority)) {
+        return false;
+    }
 
-    console.log(now() + ' Отправка оповещения об обнаружении обращения/инцидента ' + number);
+    writeToLog(`Отправка оповещения об обнаружении обращения/инцидента ${number}`);
 
     newTaskSentMessages.push(number);
     chrome.storage.sync.set({newTaskSentMessages: newTaskSentMessages});
@@ -582,7 +589,7 @@ function sendNewTaskNotification(number, title, date) {
 function sendExceededTaskNotificationMessage(number, title, date) {
     if (!isAllowedToSendExceededTaskNotification(number)) return false;
 
-    console.log(now() + ' Отправка оповещения об обнаружении превышения попыток регистрации обращения/инцидента ' + number);
+    writeToLog(`Отправка оповещения об обнаружении превышения попыток регистрации обращения/инцидента ${number}`);
 
     const message = getExceededTaskTelegramMessage(number, title, date);
     const onSuccess = () => {
