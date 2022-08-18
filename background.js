@@ -1,28 +1,33 @@
-function commandHandler(command, delay) {
-    if (!command) return false;
-    delay = delay || 1000 * 15;
-
-    setTimeout(function () {
-        if (command === "newTask") {
-            chrome.storage.sync.set({todo: 'regInProcess'});
-        } else if (command === "updateTaskList") {
-            chrome.storage.sync.set({todo: 'updateTaskList'});
-        };
-        getHPSMTabId(function (hpsmTab) {
-            chrome.tabs.executeScript(hpsmTab, {file: 'autoreg.js'});
-        });
-    }, delay);
+/**
+ * текущая вкладка
+ */
+async function getTab() {
+    return await new Promise(resolve => getSavedParam('tab', result => resolve(result.tab)))
 }
 
-chrome.extension.onMessage.addListener(
-    function (request) {
-        commandHandler(request.command, request.delay);
-    });
+async function commandHandler(command, delay) {
+    try {
+        if (!command) return false;
+        delay = delay || 1000 * 15;
 
+        setTimeout(async function () {
+            if (command === "newTask") {
+                setSavedParam({todo: 'regInProcess'});
+            } else if (command === "updateTaskList") {
+                setSavedParam({todo: 'updateTaskList'});
+            } else if (command === 'stop') {
+                clean();
+            }
+            if (command !== 'stop') {
+                const tabId = await getTab();
+                chrome.tabs.executeScript(tabId, {file: 'autoreg.js'});
+            }
+        }, delay);
+    } catch (err) {
+        alert(err);
+    }
+}
 
-chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
-    getHPSMTabId(function (hpsmTab) {
-        if (hpsmTab === tabId)
-            clean();
-    })
-});
+chrome.extension.onMessage.addListener(request => commandHandler(request.command, request.delay));
+
+chrome.tabs.onRemoved.addListener(clean);

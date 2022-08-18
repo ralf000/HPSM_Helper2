@@ -1,8 +1,17 @@
-var emailUrl = 'https://utilites.2hut.ru/hpsm_helper/send-email.php';
-var logUrl = 'https://utilites.2hut.ru/hpsm_helper/log.php';
-
 var statusNew = 'Новое';
 var statusOld = 'Зарегистрированное';
+
+function setSavedParam(data) {
+    chrome.storage.sync.set(data);
+}
+
+function getSavedParam(name, callback) {
+    chrome.storage.sync.get(name, callback);
+}
+
+function removeSavedParam(name) {
+    chrome.storage.sync.remove(name);
+}
 
 function handleContinuePage() {
     writeToLog('Сессия истекла. Возвращаюсь на страницу со списком инцидентов/обращений');
@@ -168,13 +177,6 @@ function getStatus() {
     return form.find('input[name="instance/hpc.status"]').val()
 }
 
-function getHPSMTabId(callback) {
-    chrome.storage.sync.get('hpsmTab', function (result) {
-        var hpsmTab = result.hpsmTab;
-        return callback(hpsmTab);
-    });
-}
-
 function getTopLayer() {
     return '<div id="toplayer" style="\
                 position: fixed;\
@@ -212,11 +214,10 @@ function isNewHPSM() {
 }
 
 function clean() {
-    chrome.storage.sync.remove('registration');
-    chrome.storage.sync.remove('todo');
-    chrome.storage.sync.remove('hpsmTab');
-    chrome.storage.sync.remove('handlingContinuePage');
-    chrome.storage.sync.remove('savingAttempts');
+    removeSavedParam('registration');
+    removeSavedParam('todo');
+    removeSavedParam('handlingContinuePage');
+    removeSavedParam('savingAttempts');
 }
 
 function setSavingAttempts(number, successCallback, errorCallback) {
@@ -229,7 +230,7 @@ function setSavingAttempts(number, successCallback, errorCallback) {
         savingAttempts[number] += 1;
         callback = errorCallback;
     }
-    chrome.storage.sync.set({savingAttempts: savingAttempts});
+    setSavedParam({savingAttempts: savingAttempts});
     callback();
 }
 
@@ -252,7 +253,7 @@ function getRepresentation() {
 }
 
 function getAutoRegStatus(callback) {
-    chrome.storage.sync.get('registration', function (result) {
+    getSavedParam('registration', function (result) {
         var registration = result.registration;
         return callback(registration);
     });
@@ -264,153 +265,131 @@ function getAutoRegStatus(callback) {
  */
 async function getUpdateTasksTime(callback) {
     return await new Promise(
-        resolve => chrome.storage.sync.get(
+        resolve => getSavedParam(
             'updateTasksTime',
-            result => resolve(result.updateTasksTime * 1000 * 60 - backgroundDelay)
+            result => resolve(result.updateTasksTime)
         )
-    )
+    );
 }
 
 async function getLoginHPSM() {
-    return await new Promise(resolve => chrome.storage.sync.get('loginHPSM', result => resolve(result.loginHPSM)))
+    return await new Promise(resolve => getSavedParam('loginHPSM', result => resolve(result.loginHPSM)))
 }
 
 async function getPasswordHPSM() {
-    return await new Promise(resolve => chrome.storage.sync.get('passwordHPSM', result => resolve(result.passwordHPSM)))
+    return await new Promise(resolve => getSavedParam('passwordHPSM', result => resolve(result.passwordHPSM)))
 }
 
 async function getLoginNewHPSM() {
-    return await new Promise(resolve => chrome.storage.sync.get('loginNewHPSM', result => resolve(result.loginNewHPSM)))
+    return await new Promise(resolve => getSavedParam('loginNewHPSM', result => resolve(result.loginNewHPSM)))
 }
 
 async function getPasswordNewHPSM() {
-    return await new Promise(resolve => chrome.storage.sync.get('passwordNewHPSM', result => resolve(result.passwordNewHPSM)))
-}
-
-async function getAlertEmail() {
-    return await new Promise(resolve => chrome.storage.sync.get('email', result => resolve(result.email)))
-}
-
-async function getAlertEmailPassword() {
-    return await new Promise(resolve => chrome.storage.sync.get('password', result => resolve(result.password)))
+    return await new Promise(resolve => getSavedParam('passwordNewHPSM', result => resolve(result.passwordNewHPSM)))
 }
 
 async function getInitRegistrationTag() {
-    return await new Promise(resolve => chrome.storage.sync.get('initRegistration', result => resolve(result.initRegistration)))
+    return await new Promise(resolve => getSavedParam('initRegistration', result => resolve(result.initRegistration)))
 }
 
 async function getSavedQueueName() {
-    return await new Promise(resolve => chrome.storage.sync.get('queueName', result => resolve(result.queueName)))
+    return await new Promise(resolve => getSavedParam('queueName', result => resolve(result.queueName)))
 }
 
 async function getSavedRepresentationName() {
-    return await new Promise(resolve => chrome.storage.sync.get('representationName', result => resolve(result.representationName)))
+    return await new Promise(resolve => getSavedParam('representationName', result => resolve(result.representationName)))
 }
 
 async function getTodo() {
-    return await new Promise(resolve => chrome.storage.sync.get('todo', result => resolve(result.todo)))
+    return await new Promise(resolve => getSavedParam('todo', result => resolve(result.todo)))
 }
 
 async function getSavingAttempts() {
-    return await new Promise(resolve => chrome.storage.sync.get('savingAttempts', result => resolve(result.savingAttempts)))
+    return await new Promise(resolve => getSavedParam('savingAttempts', result => resolve(result.savingAttempts)))
 }
 
 /**
  * Получает метку, сигнализирующую, что нужно применять некоторое особое поведение при регистрации обращений
  */
 async function getAppealsTag() {
-    return await new Promise(resolve => chrome.storage.sync.get('appealsTag', result => resolve(result.appealsTag)))
+    return await new Promise(resolve => getSavedParam('appealsTag', result => resolve(result.appealsTag)))
 }
 
 /**
  * Получает метку, сигнализирующую, что нужно применять некоторое особое поведение при регистрации инцидентов
  */
 async function getIncidentsTag() {
-    return await new Promise(resolve => chrome.storage.sync.get('incidentsTag', result => resolve(result.incidentsTag)))
+    return await new Promise(resolve => getSavedParam('incidentsTag', result => resolve(result.incidentsTag)))
 }
 
 /**
  * Уровни обращений для отправки уведомлений
  */
 async function getAppealNotifications() {
-    return await new Promise(resolve => chrome.storage.sync.get('appealNotifications', result => resolve(result.appealNotifications)))
+    return await new Promise(resolve => getSavedParam('appealNotifications', result => resolve(result.appealNotifications)))
 }
 
 /**
  * Уровни инцидентов для отправки уведомлений
  */
 async function getIncidentNotifications() {
-    return await new Promise(resolve => chrome.storage.sync.get('incidentNotifications', result => resolve(result.incidentNotifications)))
+    return await new Promise(resolve => getSavedParam('incidentNotifications', result => resolve(result.incidentNotifications)))
 }
 
 /**
  * Уровни обращений для отключения авторегистрации
  */
 async function getAppealNotReg() {
-    return await new Promise(resolve => chrome.storage.sync.get('appealNotReg', result => resolve(result.appealNotReg)))
+    return await new Promise(resolve => getSavedParam('appealNotReg', result => resolve(result.appealNotReg)))
 }
 
 /**
  * Уровни инцидентов для отключения авторегистрации
  */
 async function getIncidentNotReg() {
-    return await new Promise(resolve => chrome.storage.sync.get('incidentNotReg', result => resolve(result.incidentNotReg)))
-}
-
-/**
- * Уровни обращений для автовзятия в работу
- */
-async function getAppealToWork() {
-    return await new Promise(resolve => chrome.storage.sync.get('appealToWork', result => resolve(result.appealToWork)))
-}
-
-/**
- * Уровни инцидентов для автовзятия в работу
- */
-async function getIncidentToWork() {
-    return await new Promise(resolve => chrome.storage.sync.get('incidentToWork', result => resolve(result.incidentToWork)))
+    return await new Promise(resolve => getSavedParam('incidentNotReg', result => resolve(result.incidentNotReg)))
 }
 
 /**
  * токен бота тг для отправки оповещений об обращениях
  */
 async function getTgAppealBotApiToken() {
-    return await new Promise(resolve => chrome.storage.sync.get('tgAppealBotApiToken', result => resolve(result.tgAppealBotApiToken)))
+    return await new Promise(resolve => getSavedParam('tgAppealBotApiToken', result => resolve(result.tgAppealBotApiToken)))
 }
 
 /**
  * id чата тг для отправки оповещений об обращениях
  */
 async function getTgAppealChatId() {
-    return await new Promise(resolve => chrome.storage.sync.get('tgAppealChatId', result => resolve(result.tgAppealChatId)))
+    return await new Promise(resolve => getSavedParam('tgAppealChatId', result => resolve(result.tgAppealChatId)))
 }
 
 /**
  * токен бота тг для отправки оповещений об инцидентах
  */
 async function getTgIncidentBotApiToken() {
-    return await new Promise(resolve => chrome.storage.sync.get('tgIncidentBotApiToken', result => resolve(result.tgIncidentBotApiToken)))
+    return await new Promise(resolve => getSavedParam('tgIncidentBotApiToken', result => resolve(result.tgIncidentBotApiToken)))
 }
 
 /**
  * id чата тг для отправки оповещений об инцидентах
  */
 async function getTgIncidentChatId() {
-    return await new Promise(resolve => chrome.storage.sync.get('tgIncidentChatId', result => resolve(result.tgIncidentChatId)))
+    return await new Promise(resolve => getSavedParam('tgIncidentChatId', result => resolve(result.tgIncidentChatId)))
 }
 
 /**
  * список обращений/инцидентов с превышенным количеством попыток сохранения и отправленным оповещением об этом
  */
 async function getNewTaskSentMessages() {
-    return await new Promise(resolve => chrome.storage.sync.get('newTaskSentMessages', result => resolve(result.newTaskSentMessages)))
+    return await new Promise(resolve => getSavedParam('newTaskSentMessages', result => resolve(result.newTaskSentMessages)))
 }
 
 /**
  * список обращений/инцидентов с превышенным количеством попыток сохранения и отправленным оповещением об этом
  */
 async function getExceededTaskSentMessages() {
-    return await new Promise(resolve => chrome.storage.sync.get('exceededTaskSentMessages', result => resolve(result.exceededTaskSentMessages)))
+    return await new Promise(resolve => getSavedParam('exceededTaskSentMessages', result => resolve(result.exceededTaskSentMessages)))
 }
 
 /**
@@ -418,13 +397,12 @@ async function getExceededTaskSentMessages() {
  * @param callback
  */
 async function getConfig(callback) {
-    waitTime = await getUpdateTasksTime();
+    waitTime = await getUpdateTasksTime() || 10;
+    waitTime = waitTime * 1000 * 60 - backgroundDelay;
     loginHPSM = await getLoginHPSM();
     passwordHPSM = await getPasswordHPSM();
     loginNewHPSM = await getLoginNewHPSM();
     passwordNewHPSM = await getPasswordNewHPSM();
-    alertEmail = await getAlertEmail();
-    alertEmailPassword = await getAlertEmailPassword();
     initRegistration = await getInitRegistrationTag();
     queueName = await getSavedQueueName();
     representationName = await getSavedRepresentationName();
@@ -436,8 +414,6 @@ async function getConfig(callback) {
     incidentNotifications = await getIncidentNotifications() || [];
     appealNotReg = await getAppealNotReg() || [];
     incidentNotReg = await getIncidentNotReg() || [];
-    appealToWork = await getAppealToWork() || [];
-    incidentToWork = await getIncidentToWork() || [];
     tgAppealBotApiToken = await getTgAppealBotApiToken();
     tgIncidentBotApiToken = await getTgIncidentBotApiToken();
     tgAppealChatId = await getTgAppealChatId();
@@ -466,13 +442,7 @@ function getNewTaskTelegramMessage(number, title, date) {
     } else if (!appeal && incidentNotReg[priority - 1]) {
         isRegistered = ` ${text2} ${taskName} зарегистрирован.`;
     }
-    let isToWork = '';
-    if ((appeal && appealToWork[priority - 1])) {
-        isToWork = ` ${text2} ${taskName} принято в работу.`;
-    } else if (!appeal && incidentToWork[priority - 1]) {
-        isToWork = ` ${text2} ${taskName} принят в работу.`;
-    }
-    const text = `${text1} ${taskName}. Номер: ${number}. Заголовок: ${title}.${isRegistered}${isToWork}`;
+    const text = `${text1} ${taskName}. Номер: ${number}. Заголовок: ${title}.${isRegistered}`;
 
     return {chat_id: chatId, text: text};
 }
@@ -507,69 +477,7 @@ function doSendNotification(message, successCallback, errorCallback) {
 
 function writeToLog(message, url, date) {
     date = date || now();
-    url = url || logUrl;
-
-    console.log(date + ': ' + message);
-
-    if (alertEmailPassword) {
-        if (alertEmail) {
-            $.ajax({
-                url: url,
-                type: "POST",
-                dataType: 'json',
-                data: {type: 'write', message: message, email: alertEmail, password: alertEmailPassword, date: date},
-                success: function (data) {
-                    if (data.status === 'success') {
-                    } else {
-                        console.error(now() + ' ' + data.message)
-                    }
-                },
-                error: function (data) {
-                    console.error(data);
-                }
-            });
-        } else {
-            writeToLog('Не введен email для отправки писем');
-        }
-    } else {
-        //console.info(now() + ' Не введен пароль для отправки писем');
-    }
-}
-
-/**
- * Отправляет логи на почту
- * @param url
- */
-function sendLog(url) {
-    if (alertEmailPassword) {
-        if (alertEmail) {
-            return sendLogsToEmail(url, alertEmailPassword, alertEmail)
-        } else {
-            writeToLog('Не введен email для отправки писем');
-        }
-    } else {
-        //console.info(now() + ' Не введен пароль для отправки писем');
-    }
-}
-
-function sendLogsToEmail(url, password, email, onSuccessCallback) {
-    $.ajax({
-        url: url,
-        type: "POST",
-        dataType: 'json',
-        data: {type: 'read', password: password, email: email},
-        success: function (data) {
-            if (data.status === 'success') {
-                console.log(now() + ' ' + data.message);
-                $('#sendLogs').text(data.message);
-            } else {
-                console.error(now() + ' ' + data.message)
-            }
-        },
-        error: function (data) {
-            console.error(data);
-        }
-    });
+    console.log(`${date}: ${message}`);
 }
 
 function sendNewTaskNotification(number, priority, title, date) {
@@ -580,7 +488,7 @@ function sendNewTaskNotification(number, priority, title, date) {
     writeToLog(`Отправка оповещения об обнаружении обращения/инцидента ${number}`);
 
     newTaskSentMessages.push(number);
-    chrome.storage.sync.set({newTaskSentMessages: newTaskSentMessages});
+    setSavedParam({newTaskSentMessages: newTaskSentMessages});
 
     const message = getNewTaskTelegramMessage(number, title, date);
     return doSendNotification(message);
@@ -594,7 +502,7 @@ function sendExceededTaskNotificationMessage(number, title, date) {
     const message = getExceededTaskTelegramMessage(number, title, date);
     const onSuccess = () => {
         exceededTaskSentMessages.push(number);
-        chrome.storage.sync.set({exceededTaskSentMessages: exceededTaskSentMessages});
+        setSavedParam({exceededTaskSentMessages: exceededTaskSentMessages});
     }
     doSendNotification(message, onSuccess);
 }

@@ -1,17 +1,5 @@
-/*
-*************************************
-          Copyright 2014
-             benague
-*************************************
-
-
-
-
-/* header/copyright link */
-
 .container {
     font-size: 10px;
-    width: 215px;
 }
 
 input, textarea {
@@ -238,12 +226,10 @@ label.onoffswitch-label {
     padding-bottom: 5px;
 }
 
-.email-form, .creds-form, .time-form, .settings-form {
+.creds-form, .time-form, .settings-form {
     margin: 10px 0;
 }
 
-.email-form input[type=email],
-.email-form input[type=password],
 .creds-form input[type=text],
 .creds-form input[type=password],
 .settings-form textarea,
@@ -254,7 +240,7 @@ input.input {
     padding: 3px;
 }
 
-.email-form input[type=button], .creds-form input[type=button], .time-form input[type=button], .settings-form input[type=button] {
+.creds-form input[type=button], .time-form input[type=button], .settings-form input[type=button] {
     width: 15%;
     float: left;
     background-color: #bdbbbb;

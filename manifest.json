@@ -1,7 +1,7 @@
 {
   "name": "HPSM Helper",
   "description": "Упрощает работу в системой HPSM",
-  "version": "8",
+  "version": "9",
   "content_scripts": [
     {
       "matches": [

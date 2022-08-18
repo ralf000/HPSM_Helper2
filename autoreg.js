@@ -1,7 +1,7 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
 var backgroundDelay = 1000 * 16;
-var waitTime = 1000 * 60 * 10 - backgroundDelay;
+var waitTime;
 var delay = 500;
 var intValId;
 var taskType = '';
@@ -13,10 +13,6 @@ var passwordHPSM;
 var loginNewHPSM;
 //пароль от новой HPSM
 var passwordNewHPSM;
-//email для оповещений
-var alertEmail;
-//пароль для оповещений
-var alertEmailPassword;
 //метка о начале регистрации
 var initRegistration;
 //установленная очередь для поиска обращений/инцидентов
@@ -45,10 +41,6 @@ var incidentNotifications = [];
 var appealNotReg = [];
 //Уровни инцидентов для отключения авторегистрации
 var incidentNotReg = [];
-//Уровни обращений для автовзятия в работу
-var appealToWork = [];
-//Уровни инцидентов для автовзятия в работу
-var incidentToWork = [];
 //токен бота тг для отправки оповещений об обращениях
 var tgAppealBotApiToken;
 //id чата тг для отправки оповещений об обращениях
@@ -67,7 +59,6 @@ function checkStatusProgram() {
             if (registration === 'off') {
                 deleteTopLayer();
                 clean();
-                //sendLog(logUrl);
                 chrome.extension.sendMessage({command: "stop", delay: 1000});
                 return clearInterval(intValId);
             }
@@ -125,7 +116,7 @@ function tasksListIterator(filter) {
 //ищет новые обращения/инциденты в списке в соответствии с ограничениями в настройках
 function isNewTaskFilter(i, el) {
     let number = $(el).find('[id^="ext-gen-list"]').text().trim();
-    const title = getTaskValueFromList(el, 'Краткое описание');
+    const title = getTaskValueFromList(el, isNewHPSM() ? 'Заголовок' : 'Краткое описание');
     const priority = getTaskValueFromList(el, 'Приоритет').match(/\d+/)[0];
     const isNewStatus = isAppeal() ? 'Новое' : 'Направлен в группу';
     if (!$(el).find('div:contains("' + isNewStatus + '")').length) return false;
@@ -175,7 +166,7 @@ function findAndEnterToTask(number) {
 
         writeToLog(`Перехожу к регистрации ${number}`);
 
-        const task = tasksListIterator((i, el) => $(el).find('[id^="ext-gen-list"]').text() === number);
+        const task = tasksListIterator((i, el) => $(el).find('a').text() === number);
         if (task.length) task.find('a')[0].click();
     });
 }
@@ -193,7 +184,7 @@ function getTaskValueFromList(task, header) {
  */
 function waitWithCorrectEnvironment() {
     if (initRegistration && initRegistration === 'on') {
-        chrome.storage.sync.remove('initRegistration');
+        removeSavedParam('initRegistration');
         saveSearchEnvironment();
     }
     setSearchEnvironment();
@@ -207,8 +198,8 @@ function saveSearchEnvironment() {
     var representation = getRepresentation();
     if (queue && representation) {
         writeToLog('Сохраняю текущую очередь: ' + queue + ' и представление: ' + representation);
-        chrome.storage.sync.set({queueName: queue});
-        chrome.storage.sync.set({representationName: representation});
+        setSavedParam({queueName: queue});
+        setSavedParam({representationName: representation});
     }
 }
 
@@ -298,19 +289,6 @@ function registration() {
         }
         var cancelBtn = w.find('button:contains("Отмена")');
 
-        //если стоит метка, что обращения/инциденты данного приоритета нужно брать в работу, то пытаемся взять в работу
-        const priority = getPriority();
-        const toWorkLevels = isAppeal() ? appealToWork : incidentToWork;
-
-        if (priority && toWorkBtn.length) {
-            if (toWorkLevels[priority - 1]) {
-                writeToLog(isAppeal() ? 'Обращение будет взято в работу' : 'Инцидент будет взят в работу');
-                return clickToWork(toWorkBtn, cancelBtn, number, title);
-            } else {
-                writeToLog('Обращение/инцидент не будет взят в работу с соответствии с настройками');
-            }
-        }
-
         const status = getStatus();
         if ((status !== statusNew && status !== 'Направлен в группу') || !toWorkBtn.length) {
             //шлет уведомление о регистрации обращения/инцидента
@@ -330,6 +308,21 @@ function registration() {
 
         writeToLog('Регистрирую обращение/инцидент под номером ' + number);
 
+        if (toWorkBtn.length) {
+            return setSavingAttempts(
+                number,
+                () => {
+                    writeToLog('Нажимаю на кнопку: В работу/Взять в работу');
+                    toWorkBtn.click()
+                },
+                () => {
+                    writeToLog(`Превышено количество попыток сохранения талона ${number}. Нажимаю на кнопку: Отмена`);
+                    sendExceededTaskNotificationMessage(number, title, now());
+                    cancelBtn.click()
+                }
+            );
+        }
+
         if (OKBtn.length) {
             writeToLog('Нажимаю на кнопку: ОК/Возврат');
             return OKBtn.click();
@@ -342,24 +335,8 @@ function registration() {
     });
 }
 
-//нажимает кнопку "взять в работу"
-function clickToWork(toWorkBtn, cancelBtn, number, title) {
-    return setSavingAttempts(
-        number,
-        () => {
-            writeToLog('Нажимаю на кнопку: В работу/Взять в работу');
-            toWorkBtn.click()
-        },
-        () => {
-            writeToLog(`Превышено количество попыток сохранения талона ${number}. Нажимаю на кнопку: Отмена`);
-            sendExceededTaskNotificationMessage(number, title, now());
-            cancelBtn.click()
-        }
-    );
-}
-
 function getCommandFromBackground() {
-    chrome.storage.sync.remove('todo');
+    removeSavedParam('todo');
     if (todo === 'regInProcess') {
         return registration();
     }
@@ -411,7 +388,6 @@ function checkTaskType() {
     } else {
         taskType = $('.x-tab-strip-active .x-tab-strip-text').text().trim().toLowerCase().indexOf('инцид') === -1 ? 'Обращение' : 'Инцидент';
     }
-    // if (!taskType) taskType = frame.find('#X4').val().toLowerCase().indexOf('инцид') === -1 ? 'Обращение' : 'Инцидент';
 }
 
 function init() {
