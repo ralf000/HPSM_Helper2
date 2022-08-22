@@ -122,7 +122,7 @@ function isNewTaskFilter(i, el) {
     if (!$(el).find('div:contains("' + isNewStatus + '")').length) return false;
     //фильтруем талоны с превышенным количеством попыток их сохранить
     if (savingAttempts && savingAttempts[number] && savingAttempts[number] >= maxSavingAttempts) {
-        sendExceededTaskNotificationMessage(number, title, now());
+        sendExceededTaskNotificationMessage(number, priority, title, now());
         return false;
     }
     //шлем уведомление о регистрации обращения/инцидента
@@ -317,7 +317,8 @@ function registration() {
                 },
                 () => {
                     writeToLog(`Превышено количество попыток сохранения талона ${number}. Нажимаю на кнопку: Отмена`);
-                    sendExceededTaskNotificationMessage(number, title, now());
+                    const priority = getPriority();
+                    sendExceededTaskNotificationMessage(number, priority, title, now());
                     cancelBtn.click()
                 }
             );

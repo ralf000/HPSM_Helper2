@@ -429,30 +429,30 @@ function getTelegramUrl() {
     return `https://api.telegram.org/bot${botToken}/sendMessage`;
 }
 
-function getNewTaskTelegramMessage(number, title, date) {
+function getNewTaskTelegramMessage(number, priority, title, date) {
     const appeal = isAppeal();
     const chatId = appeal ? tgAppealChatId : tgIncidentChatId;
-    const text1 = appeal ? 'Обнаружено новое' : 'Обнаружен новый';
+    const text1 = appeal ? 'Новое' : 'Новый';
     const taskName = appeal ? 'обращение' : 'инцидент';
     const text2 = appeal ? 'Данное' : 'Данный';
-    const priority = getPriority();
+    priority = priority || getPriority();
     let isRegistered = '';
     if (appeal && appealNotReg[priority - 1]) {
-        isRegistered = ` ${text2} ${taskName} зарегистрировано.`;
+        isRegistered = ` ${text2} ${taskName} не зарегистрировано.`;
     } else if (!appeal && incidentNotReg[priority - 1]) {
-        isRegistered = ` ${text2} ${taskName} зарегистрирован.`;
+        isRegistered = ` ${text2} ${taskName} не зарегистрирован.`;
     }
-    const text = `${text1} ${taskName}. Номер: ${number}. Заголовок: ${title}.${isRegistered}`;
+    const text = `${text1} ${taskName}.\n<b>Номер</b>: ${number}.\n<b>Название</b>: ${title}.\n<b>Приоритет</b>: ${priority}.\n${isRegistered}\n`;
 
-    return {chat_id: chatId, text: text};
+    return {chat_id: chatId, text: text, parse_mode: 'html'};
 }
 
-function getExceededTaskTelegramMessage(number, title, date) {
+function getExceededTaskTelegramMessage(number, priority, title, date) {
     const appeal = isAppeal();
     const chatId = appeal ? tgAppealChatId : tgIncidentChatId;
     const taskName = appeal ? 'обращения' : 'инцидента';
-    const text = `Превышено количество попыток регистрации ${taskName}. Номер ${number}. Заголовок: ${title}.`;
-    return {chat_id: chatId, text: text};
+    const text = `<b>Превышено количество попыток регистрации ${taskName}</b>.\n<b>Номер</b> ${number}.\n<b>Название</b>: ${title}.<b>Приоритет</b>: ${priority}.\n`;
+    return {chat_id: chatId, text: text, parse_mode: 'html'};
 }
 
 function doSendNotification(message, successCallback, errorCallback) {
@@ -462,7 +462,6 @@ function doSendNotification(message, successCallback, errorCallback) {
         dataType: 'json',
         data: message,
         success: function (data) {
-            console.log(data.responseJSON);
             if (data.ok) {
                 if (successCallback) return successCallback();
             }
@@ -490,16 +489,16 @@ function sendNewTaskNotification(number, priority, title, date) {
     newTaskSentMessages.push(number);
     setSavedParam({newTaskSentMessages: newTaskSentMessages});
 
-    const message = getNewTaskTelegramMessage(number, title, date);
+    const message = getNewTaskTelegramMessage(number, priority, title, date);
     return doSendNotification(message);
 }
 
-function sendExceededTaskNotificationMessage(number, title, date) {
+function sendExceededTaskNotificationMessage(number, priority, title, date) {
     if (!isAllowedToSendExceededTaskNotification(number)) return false;
 
     writeToLog(`Отправка оповещения об обнаружении превышения попыток регистрации обращения/инцидента ${number}`);
 
-    const message = getExceededTaskTelegramMessage(number, title, date);
+    const message = getExceededTaskTelegramMessage(number, priority, title, date);
     const onSuccess = () => {
         exceededTaskSentMessages.push(number);
         setSavedParam({exceededTaskSentMessages: exceededTaskSentMessages});
