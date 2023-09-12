@@ -57,9 +57,10 @@ function isAllowedToSendNewTaskNotification(number, priority) {
     if ($.inArray(number, newTaskSentMessages) !== -1) return false;
     if (!isCorrectTelegramNotificationSettings()) return false;
 
-    if (!priority) return false;
-
-    const allowedPriority = isAppeal() ? appealNotifications[priority - 1] : incidentNotifications[priority - 1];
+    let allowedPriority = true;
+    if (priority) {
+        allowedPriority = isAppeal() ? appealNotifications[priority - 1] : incidentNotifications[priority - 1];
+    }
     if (!allowedPriority) {
         writeToLog(`Оповещение об обнаружении обращения/инцидента ${number} не будет отправлено в телеграмм в соответствии с настройками`);
         return false;
@@ -435,7 +436,7 @@ function getNewTaskTelegramMessage(number, priority, title, date) {
     const text1 = appeal ? 'Новое' : 'Новый';
     const taskName = appeal ? 'обращение' : 'инцидент';
     const text2 = appeal ? 'Данное' : 'Данный';
-    priority = priority || getPriority();
+    priority = priority || getPriority() || 'Не указан';
     let isRegistered = '';
     if (appeal && appealNotReg[priority - 1]) {
         isRegistered = ` ${text2} ${taskName} не зарегистрировано.`;
@@ -451,6 +452,7 @@ function getExceededTaskTelegramMessage(number, priority, title, date) {
     const appeal = isAppeal();
     const chatId = appeal ? tgAppealChatId : tgIncidentChatId;
     const taskName = appeal ? 'обращения' : 'инцидента';
+    priority = priority || 'Не указан';
     const text = `<b>Превышено количество попыток регистрации ${taskName}</b>.\n<b>Номер</b> ${number}.\n<b>Название</b>: ${title}.<b>Приоритет</b>: ${priority}.\n`;
     return {chat_id: chatId, text: text, parse_mode: 'html'};
 }

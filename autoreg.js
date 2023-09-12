@@ -1,6 +1,6 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
-var backgroundDelay = 1000 * 16;
+var backgroundDelay = 1000 * 20;
 var waitTime;
 var delay = 500;
 var intValId;
@@ -117,7 +117,10 @@ function tasksListIterator(filter) {
 function isNewTaskFilter(i, el) {
     let number = $(el).find('[id^="ext-gen-list"]').text().trim();
     const title = getTaskValueFromList(el, isNewHPSM() ? 'Заголовок' : 'Краткое описание');
-    const priority = getTaskValueFromList(el, 'Приоритет').match(/\d+/)[0];
+    let priority = getTaskValueFromList(el, 'Приоритет').match(/\d+/);
+   if (priority) {
+       priority = priority[0];
+   }
     const isNewStatus = isAppeal() ? 'Новое' : 'Направлен в группу';
     if (!$(el).find('div:contains("' + isNewStatus + '")').length) return false;
     //фильтруем талоны с превышенным количеством попыток их сохранить
