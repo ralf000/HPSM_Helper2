@@ -316,6 +316,13 @@ function registration() {
                 number,
                 () => {
                     writeToLog('Нажимаю на кнопку: В работу/Взять в работу');
+                    var commonMsg = $('#commonMsg');
+                    if (commonMsg.length && commonMsg.text().trim() === 'Поле "Краткое описание" обязательно для заполнения') {
+                        var form = getActiveFrameByHPSM();
+                        if (!form.find('input[name="instance/title"]').length) {
+                            form.find('input[name="instance/title"]').val('-');
+                        }
+                    }
                     toWorkBtn.click()
                 },
                 () => {
