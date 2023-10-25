@@ -1,6 +1,6 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
-var backgroundDelay = 1000 * 20;
+var backgroundDelay = 1000 * 25;
 var waitTime;
 var delay = 500;
 var intValId;
@@ -24,7 +24,7 @@ var todo;
 //обращения/инциденты вместе с попытками их сохранить {IM235690: 3, IM235862: 5}
 var savingAttempts = {};
 //макс. попыток сохранить обращение/инцидент
-var maxSavingAttempts = 3;
+var maxSavingAttempts = 5;
 //список новых обращений/инцидентов с отправленным оповещением
 var newTaskSentMessages = [];
 //список обращений/инцидентов с превышенным количеством попыток сохранения и отправленным оповещением об этом
