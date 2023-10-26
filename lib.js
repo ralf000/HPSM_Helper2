@@ -16,14 +16,25 @@ function removeSavedParam(name) {
 function handleContinuePage() {
     writeToLog('Сессия истекла. Возвращаюсь на страницу со списком инцидентов/обращений');
 
-    chrome.extension.sendMessage({command: "checkingOnEntryPage", delay: 1000 * 60});
+    sendCommand('checkingOnEntryPage', 1000 * 60);
 
     handleLoginPage();
 
-    setTimeout(function () {
-        return $('#btnContinue').length
-            ? $('#btnContinue')[0].click()
-            : $('#loginBtn').click();
+    setTimeout(() => {
+        const btnContinue = $('#btnContinue');
+        const btnLogin = $('#loginBtn');
+        const btnLoginAgain = $('#loginAgain');
+
+        if (btnContinue.length) {
+            return btnContinue[0].click();
+        }
+        if (btnLogin.length) {
+            return btnLogin[0].click();
+        }
+        if (btnLoginAgain.length) {
+            return btnLoginAgain[0].click();
+        }
+        throw Error('Не удалось найти кнопку для продолжения');
     }, 300);
 }
 
@@ -160,7 +171,7 @@ function isTasksList() {
  * @returns bool
  */
 function isContinuePage() {
-    return $('#btnContinue').length || $('#loginBtn').length;
+    return $('#btnContinue').length || $('#loginBtn').length || $('#loginAgain').length;
 }
 
 /**
@@ -254,10 +265,7 @@ function getRepresentation() {
 }
 
 function getAutoRegStatus(callback) {
-    getSavedParam('registration', function (result) {
-        var registration = result.registration;
-        return callback(registration);
-    });
+    getSavedParam('registration', ({registration}) => callback(registration));
 }
 
 /**
@@ -398,7 +406,7 @@ async function getExceededTaskSentMessages() {
  * @param callback
  */
 async function getConfig(callback) {
-    waitTime = await getUpdateTasksTime() || 10;
+    waitTime = await getUpdateTasksTime() || 8;
     waitTime = waitTime * 1000 * 60 - backgroundDelay;
     loginHPSM = await getLoginHPSM();
     passwordHPSM = await getPasswordHPSM();
@@ -422,6 +430,24 @@ async function getConfig(callback) {
     newTaskSentMessages = await getNewTaskSentMessages() || [];
     exceededTaskSentMessages = await getExceededTaskSentMessages() || [];
     setTimeout(callback, delay * 3);
+}
+
+function handleCounters(name, counter, type) {
+    type = type || 'timeout';
+    getSavedParam('counters', ({counters}) => {
+        counters = counters || {};
+        if (counters[name]) {
+            type === 'timeout' ? clearTimeout(counters[name]) : clearInterval(counters[name]);
+        }
+        const counterId = counter();
+        const newCounter = {};
+        newCounter[name] = counterId;
+        setSavedParam({counters: {...counters, ...newCounter}});
+    });
+}
+
+function sendCommand(command, delay, callback) {
+    chrome.extension.sendMessage({command: command, delay: delay || backgroundDelay}, callback);
 }
 
 function getTelegramUrl() {

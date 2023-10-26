@@ -11,10 +11,9 @@ function getTitle() {
 }
 
 function getTaskData(callback) {
-    getSavedParam('taskData', function (result) {
-        var task = result.taskData;
-        if (task) {
-            callback(task);
+    getSavedParam('taskData', ({taskData}) => {
+        if (taskData) {
+            callback(taskData);
         } else {
             throw new Error('Неверный тип обращения/инцидента');
         }

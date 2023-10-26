@@ -1,9 +1,8 @@
 // Глобальные переменные
 var w = getActiveWindowByHPSM();
-var backgroundDelay = 1000 * 25;
+var backgroundDelay = 1000 * 30;
 var waitTime;
 var delay = 500;
-var intValId;
 var taskType = '';
 //логин от HPSM
 var loginHPSM;
@@ -54,27 +53,31 @@ var tgIncidentChatId;
  * отслеживает состояние программы
  */
 function checkStatusProgram() {
-    intValId = setInterval(function () {
-        getAutoRegStatus(function (registration) {
-            if (registration === 'off') {
-                deleteTopLayer();
-                clean();
-                chrome.extension.sendMessage({command: "stop", delay: 1000});
-                return clearInterval(intValId);
-            }
-        });
-    }, delay * 2);
+    getAutoRegStatus(registration => {
+        if (registration === 'on') {
+            addTopLayerOnPage();
+        }
+    });
+    const counter = () =>
+        setInterval(() => {
+            getAutoRegStatus(registration => {
+                if (registration === 'off') {
+                    deleteTopLayer();
+                    clean();
+                }
+            });
+        }, delay * 2);
+    handleCounters('appStatus', counter);
 }
 
 function deleteTopLayer() {
-    if ($('#toplayer').length !== 0)
-        $('#toplayer').remove();
+    const topLayer = $('#toplayer');
+    if (topLayer.length !== 0) {
+        topLayer.remove();
+    }
 }
 
 function addTopLayerOnPage() {
-    if (!isTasksList())
-        return false;
-
     deleteTopLayer();
 
     $('body').append(getTopLayer());
@@ -82,9 +85,7 @@ function addTopLayerOnPage() {
 }
 
 function update() {
-    clearInterval(intValId);
-
-    chrome.extension.sendMessage({command: "checkForNewTasks", delay: 1000 * 5}, function () {
+    sendCommand('checkForNewTasks', 1000 * 5, function () {
         var updateBtn = w.find('button:contains("Обновить")');
         if (updateBtn.length) {
             writeToLog('Обновляю список обращений/инцидентов');
@@ -99,15 +100,13 @@ function wait() {
 
     writeToLog('Новых обращений/инцидентов не найдено. До следующей проверки: ' + (waitTime + backgroundDelay) / 60 / 1000 + ' мин');
 
-    addTopLayerOnPage();
-
-    chrome.extension.sendMessage({command: "updateTaskList", delay: waitTime});
+    sendCommand('updateTaskList', waitTime + backgroundDelay);
 }
 
 //проходит по списку обращений/инцидентов
 function tasksListIterator(filter) {
     const taskList = getRecordListByHPSM();
-
+    if (!taskList.length) return false;
     return taskList
         .find('table.x-grid3-row-table')
         .filter(filter);
@@ -165,8 +164,7 @@ function findAndEnterToTask(number) {
 
     writeToLog(`Обнаружено новое обращение/инцидент ${number}`);
 
-    chrome.extension.sendMessage({command: "newTask"}, function () {
-
+    sendCommand('newTask', backgroundDelay, function () {
         writeToLog(`Перехожу к регистрации ${number}`);
 
         const task = tasksListIterator((i, el) => $(el).find('a').text() === number);
@@ -216,12 +214,12 @@ function setSearchEnvironment() {
     if (!initRegistration) {
         if (currentQueue !== queueName) {
             writeToLog('Устанавливаю очередь: ' + queueName);
-            chrome.extension.sendMessage({command: "setQueue"});
+            sendCommand('setQueue');
             return setQueue(queueName);
         }
         if (currentRepresentation !== representationName) {
             writeToLog('Устанавливаю представление: ' + representationName);
-            chrome.extension.sendMessage({command: "setRepresentation"});
+            sendCommand('setRepresentation')
             return setRepresentation(representationName);
         }
     }
@@ -269,8 +267,6 @@ function setRepresentation(representationName) {
 function registration() {
     if (isTasksList()) return checkNewTask();
 
-    clearInterval(intValId);
-
     writeToLog('Статус обращения/инцидента: ' + getStatus());
 
     var commonMsg = $('#commonMsg');
@@ -278,13 +274,14 @@ function registration() {
         writeToLog(commonMsg.text());
     }
 
-    chrome.extension.sendMessage({command: "newTask"}, function () {
+    sendCommand('newTask', backgroundDelay, () => {
 
         var number = getNumber();
         var title = getTitle();
 
         var toWorkBtn = isAppeal() ? w.find('button:contains("Передать Инженеру")') : w.find('button:contains("В работу")');
         var OKBtn = w.find('button:contains("ОК")');
+        var saveBtn = w.find('button:contains("Сохранить")');
 
         if (isNewHPSM()) {
             toWorkBtn = isAppeal() ? w.find('button:contains("Передать Инженеру")') : w.find('button:contains("Взять в работу")');
@@ -296,7 +293,7 @@ function registration() {
         if ((status !== statusNew && status !== 'Направлен в группу') || !toWorkBtn.length) {
             //шлет уведомление о регистрации обращения/инцидента
             // sendNewTaskNotification(number, title, now());
-            writeToLog('Выход из регистрации обращения');
+            writeToLog(`Выход из регистрации обращения. Текущий статус ${status}`);
 
             if (cancelBtn.length) {
                 writeToLog('Нажимаю на кнопку: Отмена');
@@ -316,14 +313,18 @@ function registration() {
                 number,
                 () => {
                     writeToLog('Нажимаю на кнопку: В работу/Взять в работу');
-                    var commonMsg = $('#commonMsg');
-                    if (commonMsg.length && commonMsg.text().trim() === 'Поле "Краткое описание" обязательно для заполнения') {
-                        var form = getActiveFrameByHPSM();
-                        if (!form.find('input[name="instance/title"]').length) {
-                            form.find('input[name="instance/title"]').val('-');
+                    if (isAppeal()) {
+                        const commonMsg = $('#commonMsg');
+                        //Поле "Краткое описание" обязательно для заполнения
+                        if (commonMsg.length && commonMsg.text().trim().indexOf('Краткое описание') !== -1) {
+                            var form = getActiveFrameByHPSM();
+                            if (!form.find('input[name="instance/title"]').val().length) {
+                                form.find('input[name="instance/title"]').val('Без темы');
+                                return saveBtn.click();
+                            }
                         }
                     }
-                    toWorkBtn.click()
+                    toWorkBtn.click();
                 },
                 () => {
                     writeToLog(`Превышено количество попыток сохранения талона ${number}. Нажимаю на кнопку: Отмена`);
@@ -363,6 +364,9 @@ function onOffRegHandler(registration) {
         if (isContinuePage()) {
             return handleContinuePage();
         }
+        const messageBtn = $('.x-btn-text.messageBoxButton');
+        if (messageBtn.length) messageBtn.click();
+
         getCommandFromBackground();
     }
 }
