@@ -407,7 +407,7 @@ async function getExceededTaskSentMessages() {
  */
 async function getConfig(callback) {
     waitTime = await getUpdateTasksTime() || 8;
-    waitTime = waitTime * 1000 * 60 - backgroundDelay;
+    waitTime = waitTime * 1000 * 60 - backgroundDelay - (1000 * 10);
     loginHPSM = await getLoginHPSM();
     passwordHPSM = await getPasswordHPSM();
     loginNewHPSM = await getLoginNewHPSM();

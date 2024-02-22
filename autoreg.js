@@ -84,16 +84,18 @@ function addTopLayerOnPage() {
     $('#toplayer').show();
 }
 
+function doUpdate() {
+    var updateBtn = w.find('button:contains("Обновить")');
+    if (updateBtn.length) {
+        writeToLog('Обновляю список обращений/инцидентов');
+        updateBtn.click();
+    } else {
+        w.find('button:contains("ОК")').click()
+    }
+}
+
 function update() {
-    sendCommand('checkForNewTasks', 1000 * 5, function () {
-        var updateBtn = w.find('button:contains("Обновить")');
-        if (updateBtn.length) {
-            writeToLog('Обновляю список обращений/инцидентов');
-            updateBtn.click();
-        } else {
-            w.find('button:contains("ОК")').click()
-        }
-    });
+    sendCommand('checkForNewTasks', 1000 * 5, doUpdate);
 }
 
 function wait() {
@@ -152,12 +154,16 @@ function checkNewTask() {
 
     writeToLog('Проверяю наличие новых обращений/инцидентов');
 
-    const newTaskNumber = getNewTask();
-    if (newTaskNumber && isCorrectSearchEnvironment()) {
-        findAndEnterToTask(newTaskNumber);
-    } else {
-        waitWithCorrectEnvironment();
-    }
+    doUpdate();
+
+    setTimeout(() => {
+        const newTaskNumber = getNewTask();
+        if (newTaskNumber && isCorrectSearchEnvironment()) {
+            findAndEnterToTask(newTaskNumber);
+        } else {
+            waitWithCorrectEnvironment();
+        }
+    }, 5 * 1000);
 }
 
 function findAndEnterToTask(number) {
